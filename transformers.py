@@ -471,36 +471,51 @@ def gen_train_test(config: Config):
 
     # Add PAD tokens at beginning and EOS at the end
     final_pairs = []
+    target_idx = np.zeros((len(pairs), 2))
 
-    for pair in pairs:
+    for i, pair in enumerate(pairs):
         # print("pair", pair)
         target_length = len(str(config.p)) * 3 + 3 # worst case for mod113: 112+110=109EOS"
         # print("target_length", target_length)
         pair_as_str = f"{pair[0]}+{pair[1]}={pair[2]}"
         current_length = len(pair_as_str)
+        question_length = len(f"{pair[0]}+{pair[1]}")
+        result_length = len(f"={pair[2]}")
         # print("current_length", current_length) 
         if current_length < target_length:
             pad_length = target_length - (current_length+1)
             # print("pad_length", pad_length)
         else: 
             pad_length = 0
+
+        target_idx[i] = (question_length, question_length + result_length)
+
         pair_as_tokenids = [config.token_to_tokenid[c] for c in pair_as_str]
         pair_as_tokenids_padded = pad_length * [config.token_to_tokenid['PAD']] + pair_as_tokenids + [config.token_to_tokenid['EOS']]
 
         assert len(pair_as_tokenids_padded) == int(target_length)
         final_pairs.append(pair_as_tokenids_padded)
-    # return pairs[:div], pairs[div:]
-    return final_pairs[:div], final_pairs[div:]
+
+    return final_pairs[:div], final_pairs[div:], target_idx[:div], target_idx[div:]
 
 
 # TODO what type for model?
-def full_loss(config : Config, model: Transformer, data):
+def full_loss(config : Config, model: Transformer, data, idx):
     '''Takes the cross entropy loss of the model on the data'''
     # TODO: Implement decoding loss
-    logits = model(data)[:, -1]
-    labels = t.tensor([0]*len(logits)).to(config.device)
+    logits = model(data)
 
-    return helpers.cross_entropy_high_precision(logits, labels)
+    for i, dat in enumerate(data):
+        start_idx = int(idx[i, 0])
+        stop_idx = int(idx[i, 1])
+        print('start_idx', start_idx)
+        print('stop_idx', stop_idx)
+        relevant_logits = logits[i][start_idx:stop_idx+1]
+        targets = data[i][start_idx+1:stop_idx+2]
+        print('entire data', data[i])
+        print('targets', targets)
+    
+    return helpers.cross_entropy_high_precision(relevant_logits, targets)
 
 class Trainer:
     '''TODO
@@ -520,7 +535,7 @@ class Trainer:
         self.optimizer = optim.AdamW(self.model.parameters(), lr = config.lr, weight_decay=config.weight_decay, betas=(0.9, 0.98))
         self.scheduler = optim.lr_scheduler.LambdaLR(self.optimizer, lambda step: min(step/10, 1)) # TODO make this a config option
         self.run_name = f"grok_{int(time.time())}"
-        self.train, self.test = gen_train_test(config = config)
+        self.train, self.test, self.train_target_idx, self.test_target_idx = gen_train_test(config = config)
         self.metrics_dictionary = defaultdict(dict) # so we can safely call 'update' on keys
         print('training length = ', len(self.train))
         print('testing length = ', len(self.test))
@@ -546,8 +561,8 @@ class Trainer:
 
     def do_a_training_step(self, epoch: int):
         '''returns train_loss, test_loss'''
-        train_loss = full_loss(config = self.config, model = self.model, data = self.train)
-        test_loss = full_loss(config = self.config, model = self.model, data = self.test)
+        train_loss = full_loss(config = self.config, model = self.model, data = self.train, idx=self.train_target_idx)
+        test_loss = full_loss(config = self.config, model = self.model, data = self.test, idx=self.test_target_idx)
         self.train_losses.append(train_loss.item())
         self.test_losses.append(test_loss.item())
         if epoch % 100 == 0:

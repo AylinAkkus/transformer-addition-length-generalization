@@ -72,7 +72,7 @@ class Config():
     act_type: str = 'ReLU' #@param ['ReLU', 'GeLU']
 
 
-    device: t.device = t.device("cuda")
+    device: t.device = t.device("cuda") if t.cuda.is_available() else t.device("cpu")
 
     # TODO ankify the privileged basis concept- a priori vs etc. ; consider writing up an explanation of privileged basis
 
@@ -514,7 +514,7 @@ class Trainer:
     def __init__(self, config : Config, model = None) -> None:
         wandb.init(project = "grokking", config = dataclasses.asdict(config))
         self.model = model if model is not None else Transformer(config, use_cache=False)
-        # self.model.to(config.device)
+        self.model.to(config.device)
         self.optimizer = optim.AdamW(self.model.parameters(), lr = config.lr, weight_decay=config.weight_decay, betas=(0.9, 0.98))
         self.scheduler = optim.lr_scheduler.LambdaLR(self.optimizer, lambda step: min(step/10, 1)) # TODO make this a config option
         self.run_name = f"grok_{int(time.time())}"

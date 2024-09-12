@@ -15,6 +15,7 @@ import time
 import torch.nn.functional as F
 import einops
 import random 
+import helpers
 from helpers import *
 from dataclasses import dataclass
 import os
@@ -32,9 +33,9 @@ class Config():
     d_model: int = 128 #@param
     fn_name: str = 'add' #@param ['add', 'subtract', 'x2xyy2','rand']
     frac_train: float = 0.3 #@param
-    num_epochs: int = 50000 #@param
-    save_models: bool = False #@param
-    save_every: int = 100 #@param
+    num_epochs: int = 1000 #@param
+    save_models: bool = True #@param
+    save_every: int = 1000 #@param
 
     # TODO for the first 1000 steps, save every 10 because 'interesting stuff happens at the start'
     # TODO add a helper function to generate indices here
@@ -72,7 +73,7 @@ class Config():
     act_type: str = 'ReLU' #@param ['ReLU', 'GeLU']
 
 
-    device: t.device = t.device("cuda")
+    device: t.device = t.device("cuda") if t.cuda.is_available() else t.device("cpu")
 
     # TODO ankify the privileged basis concept- a priori vs etc. ; consider writing up an explanation of privileged basis
 
@@ -184,7 +185,6 @@ class Embed(nn.Module):
         self.W_E = nn.Parameter(t.randn(d_model, d_vocab)/np.sqrt(d_model))
     
     def forward(self, x):
-        print("tokenized inputs", x)
         return t.einsum('dbp -> bpd', self.W_E[:, x])
     
 
@@ -204,7 +204,7 @@ class PosEmbed(nn.Module):
         self.W_pos = nn.Parameter(t.randn(max_ctx, d_model)/np.sqrt(d_model))
     
     def forward(self, x):
-        print('x shape', x.shape)
+        #print('x shape', x.shape)
         return x+self.W_pos[:x.shape[-2]]
 
 #| export
@@ -354,6 +354,7 @@ class Transformer(nn.Module):
             hp.add_hook(save_hook, 'fwd')
             if incl_bwd:
                 hp.add_hook(save_hook_back, 'bwd')
+                
 
 # %% ../transformer.ipynb 7
 def make_fourier_basis(config: Config):
@@ -496,8 +497,10 @@ def gen_train_test(config: Config):
 def full_loss(config : Config, model: Transformer, data):
     '''Takes the cross entropy loss of the model on the data'''
     # TODO: Implement decoding loss
-    pass 
+    logits = model(data)[:, -1]
+    labels = t.tensor([0]*len(logits)).to(config.device)
 
+    return helpers.cross_entropy_high_precision(logits, labels)
 
 class Trainer:
     '''TODO
@@ -513,7 +516,7 @@ class Trainer:
     def __init__(self, config : Config, model = None) -> None:
         wandb.init(project = "grokking", config = dataclasses.asdict(config))
         self.model = model if model is not None else Transformer(config, use_cache=False)
-        # self.model.to(config.device)
+        self.model.to(config.device)
         self.optimizer = optim.AdamW(self.model.parameters(), lr = config.lr, weight_decay=config.weight_decay, betas=(0.9, 0.98))
         self.scheduler = optim.lr_scheduler.LambdaLR(self.optimizer, lambda step: min(step/10, 1)) # TODO make this a config option
         self.run_name = f"grok_{int(time.time())}"
@@ -646,7 +649,8 @@ def train_model(config: Config):
             # TODO this also used to do a check about test loss- pretty sure not necessary
             world.save_epoch(epoch = epoch)
         if config.is_it_time_to_take_metrics(epoch = epoch):
-            world.take_metrics(epoch = epoch, train = world.train)
+            pass
+            #world.take_metrics(epoch = epoch, train = world.train)
 
     world.post_training_save(save_optimizer_and_scheduler=True)
     helpers.lines([world.train_losses, world.test_losses], labels=['train', 'test'], log_y=True)

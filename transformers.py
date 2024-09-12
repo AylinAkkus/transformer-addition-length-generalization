@@ -307,6 +307,7 @@ class Transformer(nn.Module):
         '''this function could be augmented to contain more options for creating different architectures'''
         super().__init__()
         self.cache = {}
+        self.config = config
         self.use_cache = use_cache
         self.embed = Embed(d_vocab = config.d_vocab, d_model = config.d_model)
         self.pos_embed = PosEmbed(max_ctx = config.n_ctx, d_model = config.d_model)
@@ -331,6 +332,21 @@ class Transformer(nn.Module):
             x = block(x)
         # x = self.ln(x)
         x = self.unembed(x)
+        return x
+    
+    @t.no_grad()
+    def generate_greedy(self, x):
+        # Greedy generation for a sequence (non-batched)
+
+        while len(x) <= self.config.n_ctx:
+
+            logits = self([x])[0, -1]
+            next_token = t.argmax(logits).item()
+            x.append(next_token)
+
+            if next_token == self.config.token_to_tokenid['EOS']:
+                return x
+
         return x
 
     def set_use_cache(self, use_cache):
@@ -491,7 +507,7 @@ def gen_train_test(config: Config):
         target_idx[i] = (question_length, question_length + result_length)
 
         pair_as_tokenids = [config.token_to_tokenid[c] for c in pair_as_str]
-        pair_as_tokenids_padded = pad_length * [config.token_to_tokenid['PAD']] + pair_as_tokenids + [config.token_to_tokenid['EOS']]
+        pair_as_tokenids_padded =  pair_as_tokenids + [config.token_to_tokenid['EOS']] + pad_length * [config.token_to_tokenid['PAD']]
 
         assert len(pair_as_tokenids_padded) == int(target_length)
         final_pairs.append(pair_as_tokenids_padded)

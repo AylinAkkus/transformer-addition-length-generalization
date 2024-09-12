@@ -184,8 +184,7 @@ class Embed(nn.Module):
         self.W_E = nn.Parameter(t.randn(d_model, d_vocab)/np.sqrt(d_model))
     
     def forward(self, x):
-        print('x', x)
-        print(self.W_E[:, x])
+        print("tokenized inputs", x)
         return t.einsum('dbp -> bpd', self.W_E[:, x])
     
 

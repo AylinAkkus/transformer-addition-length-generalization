@@ -1,0 +1,196 @@
+2024-09-11 18:26:56,895 INFO    StreamThr :20816 [internal.py:wandb_internal():85] W&B internal server running at pid: 20816, started at: 2024-09-11 18:26:56.892782
+2024-09-11 18:26:56,898 DEBUG   HandlerThread:20816 [handler.py:handle_request():158] handle_request: status
+2024-09-11 18:26:56,898 INFO    WriterThread:20816 [datastore.py:open_for_write():87] open: C:\Users\aylin\Documents\MechInt\transformer-addition-length-generalization\wandb\run-20240911_182656-1q7ldfwo\run-1q7ldfwo.wandb
+2024-09-11 18:26:56,907 DEBUG   SenderThread:20816 [sender.py:send():391] send: header
+2024-09-11 18:26:56,976 DEBUG   SenderThread:20816 [sender.py:send():391] send: run
+2024-09-11 18:26:57,530 INFO    SenderThread:20816 [dir_watcher.py:__init__():211] watching files in: C:\Users\aylin\Documents\MechInt\transformer-addition-length-generalization\wandb\run-20240911_182656-1q7ldfwo\files
+2024-09-11 18:26:57,532 INFO    SenderThread:20816 [sender.py:_start_run_threads():1200] run started: 1q7ldfwo with start time 1726072016.892782
+2024-09-11 18:26:57,546 DEBUG   HandlerThread:20816 [handler.py:handle_request():158] handle_request: run_start
+2024-09-11 18:26:57,562 DEBUG   HandlerThread:20816 [system_info.py:__init__():26] System info init
+2024-09-11 18:26:57,562 DEBUG   HandlerThread:20816 [system_info.py:__init__():41] System info init done
+2024-09-11 18:26:57,562 INFO    HandlerThread:20816 [system_monitor.py:start():194] Starting system monitor
+2024-09-11 18:26:57,562 INFO    SystemMonitor:20816 [system_monitor.py:_start():158] Starting system asset monitoring threads
+2024-09-11 18:26:57,562 INFO    HandlerThread:20816 [system_monitor.py:probe():214] Collecting system info
+2024-09-11 18:26:57,570 INFO    SystemMonitor:20816 [interfaces.py:start():188] Started cpu monitoring
+2024-09-11 18:26:57,570 DEBUG   HandlerThread:20816 [system_info.py:probe():152] Probing system
+2024-09-11 18:26:57,570 INFO    SystemMonitor:20816 [interfaces.py:start():188] Started disk monitoring
+2024-09-11 18:26:57,578 INFO    SystemMonitor:20816 [interfaces.py:start():188] Started memory monitoring
+2024-09-11 18:26:57,586 INFO    SystemMonitor:20816 [interfaces.py:start():188] Started network monitoring
+2024-09-11 18:26:57,595 DEBUG   HandlerThread:20816 [system_info.py:_probe_git():137] Probing git
+2024-09-11 18:26:57,715 DEBUG   HandlerThread:20816 [system_info.py:_probe_git():145] Probing git done
+2024-09-11 18:26:57,715 DEBUG   HandlerThread:20816 [system_info.py:probe():200] Probing system done
+2024-09-11 18:26:57,715 DEBUG   HandlerThread:20816 [system_monitor.py:probe():223] {'os': 'Windows-10-10.0.22621-SP0', 'python': '3.8.0', 'heartbeatAt': '2024-09-11T16:26:57.570749', 'startedAt': '2024-09-11T16:26:56.846942', 'docker': None, 'cuda': None, 'args': (), 'state': 'running', 'program': 'c:/Users/aylin/Documents/MechInt/transformer-addition-length-generalization/transformers.py', 'codePathLocal': 'transformers.py', 'codePath': 'transformers.py', 'git': {'remote': 'https://github.com/AylinAkkus/transformer-addition-length-generalization', 'commit': '0824f727f65f7165f9a528d2ee851167364468b3'}, 'email': 'aylin.g.akkus@gmail.com', 'root': 'C:/Users/aylin/Documents/MechInt/transformer-addition-length-generalization', 'host': 'AylinSurface9', 'username': 'aylin', 'executable': 'C:\\Users\\aylin\\anaconda3\\envs\\transformer-addition-length-generalization\\python.exe', 'cpu_count': 10, 'cpu_count_logical': 12, 'cpu_freq': {'current': 1733.0, 'min': 0.0, 'max': 2600.0}, 'cpu_freq_per_core': [{'current': 1733.0, 'min': 0.0, 'max': 2600.0}], 'disk': {'/': {'total': 475.54394149780273, 'used': 245.0078887939453}}, 'memory': {'total': 15.828418731689453}}
+2024-09-11 18:26:57,715 INFO    HandlerThread:20816 [system_monitor.py:probe():224] Finished collecting system info
+2024-09-11 18:26:57,715 INFO    HandlerThread:20816 [system_monitor.py:probe():227] Publishing system info
+2024-09-11 18:26:57,715 DEBUG   HandlerThread:20816 [system_info.py:_save_conda():209] Saving list of conda packages installed into the current environment
+2024-09-11 18:26:57,731 ERROR   HandlerThread:20816 [system_info.py:_save_conda():223] Error saving conda packages: [WinError 2] The system cannot find the file specified
+Traceback (most recent call last):
+  File "C:\Users\aylin\anaconda3\envs\transformer-addition-length-generalization\lib\site-packages\wandb\sdk\internal\system\system_info.py", line 216, in _save_conda
+    subprocess.call(
+  File "C:\Users\aylin\anaconda3\envs\transformer-addition-length-generalization\lib\subprocess.py", line 340, in call
+    with Popen(*popenargs, **kwargs) as p:
+  File "C:\Users\aylin\anaconda3\envs\transformer-addition-length-generalization\lib\subprocess.py", line 854, in __init__
+    self._execute_child(args, executable, preexec_fn, close_fds,
+  File "C:\Users\aylin\anaconda3\envs\transformer-addition-length-generalization\lib\subprocess.py", line 1307, in _execute_child
+    hp, ht, pid, tid = _winapi.CreateProcess(executable, args,
+FileNotFoundError: [WinError 2] The system cannot find the file specified
+2024-09-11 18:26:57,739 DEBUG   HandlerThread:20816 [system_info.py:_save_conda():224] Saving conda packages done
+2024-09-11 18:26:57,739 INFO    HandlerThread:20816 [system_monitor.py:probe():229] Finished publishing system info
+2024-09-11 18:26:57,747 DEBUG   SenderThread:20816 [sender.py:send():391] send: files
+2024-09-11 18:26:57,747 INFO    SenderThread:20816 [sender.py:_save_file():1466] saving file wandb-metadata.json with policy now
+2024-09-11 18:26:57,974 DEBUG   HandlerThread:20816 [handler.py:handle_request():158] handle_request: python_packages
+2024-09-11 18:26:57,974 DEBUG   SenderThread:20816 [sender.py:send_request():418] send_request: python_packages
+2024-09-11 18:26:57,974 DEBUG   HandlerThread:20816 [handler.py:handle_request():158] handle_request: stop_status
+2024-09-11 18:26:57,974 DEBUG   SenderThread:20816 [sender.py:send_request():418] send_request: stop_status
+2024-09-11 18:26:57,983 DEBUG   HandlerThread:20816 [handler.py:handle_request():158] handle_request: internal_messages
+2024-09-11 18:26:58,227 DEBUG   SenderThread:20816 [sender.py:send():391] send: telemetry
+2024-09-11 18:26:58,325 INFO    wandb-upload_0:20816 [upload_job.py:push():130] Uploaded file C:\Users\aylin\AppData\Local\Temp\tmpon5pvcklwandb\pt7oc1wz-wandb-metadata.json
+2024-09-11 18:26:58,543 INFO    Thread-16 :20816 [dir_watcher.py:_on_file_created():271] file/dir created: C:\Users\aylin\Documents\MechInt\transformer-addition-length-generalization\wandb\run-20240911_182656-1q7ldfwo\files\wandb-metadata.json
+2024-09-11 18:26:58,543 INFO    Thread-16 :20816 [dir_watcher.py:_on_file_created():271] file/dir created: C:\Users\aylin\Documents\MechInt\transformer-addition-length-generalization\wandb\run-20240911_182656-1q7ldfwo\files\conda-environment.yaml
+2024-09-11 18:26:58,543 INFO    Thread-16 :20816 [dir_watcher.py:_on_file_created():271] file/dir created: C:\Users\aylin\Documents\MechInt\transformer-addition-length-generalization\wandb\run-20240911_182656-1q7ldfwo\files\requirements.txt
+2024-09-11 18:26:59,561 INFO    Thread-16 :20816 [dir_watcher.py:_on_file_created():271] file/dir created: C:\Users\aylin\Documents\MechInt\transformer-addition-length-generalization\wandb\run-20240911_182656-1q7ldfwo\files\output.log
+2024-09-11 18:26:59,681 DEBUG   SenderThread:20816 [sender.py:send():391] send: exit
+2024-09-11 18:26:59,681 INFO    SenderThread:20816 [sender.py:send_exit():598] handling exit code: 1
+2024-09-11 18:26:59,681 INFO    SenderThread:20816 [sender.py:send_exit():600] handling runtime: 2
+2024-09-11 18:26:59,687 INFO    SenderThread:20816 [sender.py:_save_file():1466] saving file wandb-summary.json with policy end
+2024-09-11 18:26:59,689 INFO    SenderThread:20816 [sender.py:send_exit():606] send defer
+2024-09-11 18:26:59,689 DEBUG   HandlerThread:20816 [handler.py:handle_request():158] handle_request: defer
+2024-09-11 18:26:59,689 INFO    HandlerThread:20816 [handler.py:handle_request_defer():184] handle defer: 0
+2024-09-11 18:26:59,690 DEBUG   SenderThread:20816 [sender.py:send_request():418] send_request: defer
+2024-09-11 18:26:59,691 INFO    SenderThread:20816 [sender.py:send_request_defer():622] handle sender defer: 0
+2024-09-11 18:26:59,691 INFO    SenderThread:20816 [sender.py:transition_state():626] send defer: 1
+2024-09-11 18:26:59,691 DEBUG   HandlerThread:20816 [handler.py:handle_request():158] handle_request: defer
+2024-09-11 18:26:59,692 INFO    HandlerThread:20816 [handler.py:handle_request_defer():184] handle defer: 1
+2024-09-11 18:26:59,692 DEBUG   SenderThread:20816 [sender.py:send_request():418] send_request: defer
+2024-09-11 18:26:59,692 INFO    SenderThread:20816 [sender.py:send_request_defer():622] handle sender defer: 1
+2024-09-11 18:26:59,692 INFO    SenderThread:20816 [sender.py:transition_state():626] send defer: 2
+2024-09-11 18:26:59,692 DEBUG   HandlerThread:20816 [handler.py:handle_request():158] handle_request: defer
+2024-09-11 18:26:59,693 INFO    HandlerThread:20816 [handler.py:handle_request_defer():184] handle defer: 2
+2024-09-11 18:26:59,693 INFO    HandlerThread:20816 [system_monitor.py:finish():203] Stopping system monitor
+2024-09-11 18:26:59,693 DEBUG   SystemMonitor:20816 [system_monitor.py:_start():172] Starting system metrics aggregation loop
+2024-09-11 18:26:59,693 INFO    HandlerThread:20816 [interfaces.py:finish():200] Joined cpu monitor
+2024-09-11 18:26:59,694 DEBUG   SystemMonitor:20816 [system_monitor.py:_start():179] Finished system metrics aggregation loop
+2024-09-11 18:26:59,694 INFO    HandlerThread:20816 [interfaces.py:finish():200] Joined disk monitor
+2024-09-11 18:26:59,694 DEBUG   SystemMonitor:20816 [system_monitor.py:_start():183] Publishing last batch of metrics
+2024-09-11 18:26:59,694 INFO    HandlerThread:20816 [interfaces.py:finish():200] Joined memory monitor
+2024-09-11 18:26:59,696 INFO    HandlerThread:20816 [interfaces.py:finish():200] Joined network monitor
+2024-09-11 18:26:59,697 DEBUG   SenderThread:20816 [sender.py:send_request():418] send_request: defer
+2024-09-11 18:26:59,697 INFO    SenderThread:20816 [sender.py:send_request_defer():622] handle sender defer: 2
+2024-09-11 18:26:59,697 INFO    SenderThread:20816 [sender.py:transition_state():626] send defer: 3
+2024-09-11 18:26:59,697 DEBUG   SenderThread:20816 [sender.py:send():391] send: stats
+2024-09-11 18:26:59,697 DEBUG   HandlerThread:20816 [handler.py:handle_request():158] handle_request: defer
+2024-09-11 18:26:59,698 INFO    HandlerThread:20816 [handler.py:handle_request_defer():184] handle defer: 3
+2024-09-11 18:26:59,698 DEBUG   SenderThread:20816 [sender.py:send_request():418] send_request: defer
+2024-09-11 18:26:59,699 INFO    SenderThread:20816 [sender.py:send_request_defer():622] handle sender defer: 3
+2024-09-11 18:26:59,699 INFO    SenderThread:20816 [sender.py:transition_state():626] send defer: 4
+2024-09-11 18:26:59,699 DEBUG   HandlerThread:20816 [handler.py:handle_request():158] handle_request: defer
+2024-09-11 18:26:59,699 INFO    HandlerThread:20816 [handler.py:handle_request_defer():184] handle defer: 4
+2024-09-11 18:26:59,699 DEBUG   SenderThread:20816 [sender.py:send_request():418] send_request: defer
+2024-09-11 18:26:59,699 INFO    SenderThread:20816 [sender.py:send_request_defer():622] handle sender defer: 4
+2024-09-11 18:26:59,700 INFO    SenderThread:20816 [sender.py:transition_state():626] send defer: 5
+2024-09-11 18:26:59,700 DEBUG   HandlerThread:20816 [handler.py:handle_request():158] handle_request: defer
+2024-09-11 18:26:59,700 INFO    HandlerThread:20816 [handler.py:handle_request_defer():184] handle defer: 5
+2024-09-11 18:26:59,700 DEBUG   SenderThread:20816 [sender.py:send():391] send: summary
+2024-09-11 18:26:59,702 INFO    SenderThread:20816 [sender.py:_save_file():1466] saving file wandb-summary.json with policy end
+2024-09-11 18:26:59,702 DEBUG   SenderThread:20816 [sender.py:send_request():418] send_request: defer
+2024-09-11 18:26:59,702 INFO    SenderThread:20816 [sender.py:send_request_defer():622] handle sender defer: 5
+2024-09-11 18:26:59,702 INFO    SenderThread:20816 [sender.py:transition_state():626] send defer: 6
+2024-09-11 18:26:59,702 DEBUG   HandlerThread:20816 [handler.py:handle_request():158] handle_request: defer
+2024-09-11 18:26:59,703 INFO    HandlerThread:20816 [handler.py:handle_request_defer():184] handle defer: 6
+2024-09-11 18:26:59,703 DEBUG   SenderThread:20816 [sender.py:send_request():418] send_request: defer
+2024-09-11 18:26:59,703 INFO    SenderThread:20816 [sender.py:send_request_defer():622] handle sender defer: 6
+2024-09-11 18:26:59,710 DEBUG   HandlerThread:20816 [handler.py:handle_request():158] handle_request: status_report
+2024-09-11 18:26:59,979 INFO    SenderThread:20816 [sender.py:transition_state():626] send defer: 7
+2024-09-11 18:26:59,979 DEBUG   HandlerThread:20816 [handler.py:handle_request():158] handle_request: defer
+2024-09-11 18:26:59,979 INFO    HandlerThread:20816 [handler.py:handle_request_defer():184] handle defer: 7
+2024-09-11 18:26:59,979 DEBUG   SenderThread:20816 [sender.py:send_request():418] send_request: defer
+2024-09-11 18:26:59,979 INFO    SenderThread:20816 [sender.py:send_request_defer():622] handle sender defer: 7
+2024-09-11 18:27:00,027 WARNING OutRawWr-stdout:20816 [sender.py:_output_raw_writer_thread():1293] Terminal output too large. Logging without processing.
+2024-09-11 18:27:00,575 INFO    Thread-16 :20816 [dir_watcher.py:_on_file_modified():288] file/dir modified: C:\Users\aylin\Documents\MechInt\transformer-addition-length-generalization\wandb\run-20240911_182656-1q7ldfwo\files\output.log
+2024-09-11 18:27:00,575 INFO    Thread-16 :20816 [dir_watcher.py:_on_file_modified():288] file/dir modified: C:\Users\aylin\Documents\MechInt\transformer-addition-length-generalization\wandb\run-20240911_182656-1q7ldfwo\files\config.yaml
+2024-09-11 18:27:00,575 INFO    Thread-16 :20816 [dir_watcher.py:_on_file_created():271] file/dir created: C:\Users\aylin\Documents\MechInt\transformer-addition-length-generalization\wandb\run-20240911_182656-1q7ldfwo\files\wandb-summary.json
+2024-09-11 18:27:00,712 DEBUG   HandlerThread:20816 [handler.py:handle_request():158] handle_request: poll_exit
+2024-09-11 18:27:01,742 INFO    SenderThread:20816 [sender.py:transition_state():626] send defer: 8
+2024-09-11 18:27:01,742 DEBUG   SenderThread:20816 [sender.py:send_request():418] send_request: poll_exit
+2024-09-11 18:27:01,742 DEBUG   HandlerThread:20816 [handler.py:handle_request():158] handle_request: defer
+2024-09-11 18:27:01,742 INFO    HandlerThread:20816 [handler.py:handle_request_defer():184] handle defer: 8
+2024-09-11 18:27:01,751 DEBUG   SenderThread:20816 [sender.py:send_request():418] send_request: defer
+2024-09-11 18:27:01,751 INFO    SenderThread:20816 [sender.py:send_request_defer():622] handle sender defer: 8
+2024-09-11 18:27:01,751 INFO    SenderThread:20816 [job_builder.py:build():443] Attempting to build job artifact
+2024-09-11 18:27:01,751 INFO    SenderThread:20816 [job_builder.py:_get_source_type():572] is repo sourced job
+2024-09-11 18:27:01,889 INFO    SenderThread:20816 [job_builder.py:build():548] adding wandb-job metadata file
+2024-09-11 18:27:01,913 INFO    SenderThread:20816 [sender.py:transition_state():626] send defer: 9
+2024-09-11 18:27:01,913 DEBUG   HandlerThread:20816 [handler.py:handle_request():158] handle_request: defer
+2024-09-11 18:27:01,914 INFO    HandlerThread:20816 [handler.py:handle_request_defer():184] handle defer: 9
+2024-09-11 18:27:01,914 DEBUG   SenderThread:20816 [sender.py:send():391] send: artifact
+2024-09-11 18:27:02,594 INFO    Thread-16 :20816 [dir_watcher.py:_on_file_modified():288] file/dir modified: C:\Users\aylin\Documents\MechInt\transformer-addition-length-generalization\wandb\run-20240911_182656-1q7ldfwo\files\output.log
+2024-09-11 18:27:02,726 DEBUG   HandlerThread:20816 [handler.py:handle_request():158] handle_request: poll_exit
+2024-09-11 18:27:02,946 INFO    SenderThread:20816 [sender.py:send_artifact():1549] sent artifact job-https___github.com_AylinAkkus_transformer-addition-length-generalization_transformers.py - {'id': 'QXJ0aWZhY3Q6MTIxNTUwODMwOA==', 'state': 'COMMITTED', 'artifactSequence': {'id': 'QXJ0aWZhY3RDb2xsZWN0aW9uOjQ0Njk2OTc3OA==', 'latestArtifact': {'id': 'QXJ0aWZhY3Q6MTIxNTUwODMwOA==', 'versionIndex': 0}}}
+2024-09-11 18:27:02,946 DEBUG   SenderThread:20816 [sender.py:send_request():418] send_request: defer
+2024-09-11 18:27:02,946 INFO    SenderThread:20816 [sender.py:send_request_defer():622] handle sender defer: 9
+2024-09-11 18:27:02,946 INFO    SenderThread:20816 [dir_watcher.py:finish():358] shutting down directory watcher
+2024-09-11 18:27:03,604 INFO    SenderThread:20816 [dir_watcher.py:finish():388] scan: C:\Users\aylin\Documents\MechInt\transformer-addition-length-generalization\wandb\run-20240911_182656-1q7ldfwo\files
+2024-09-11 18:27:03,604 INFO    SenderThread:20816 [dir_watcher.py:finish():402] scan save: C:\Users\aylin\Documents\MechInt\transformer-addition-length-generalization\wandb\run-20240911_182656-1q7ldfwo\files\conda-environment.yaml conda-environment.yaml
+2024-09-11 18:27:03,604 INFO    SenderThread:20816 [dir_watcher.py:finish():402] scan save: C:\Users\aylin\Documents\MechInt\transformer-addition-length-generalization\wandb\run-20240911_182656-1q7ldfwo\files\config.yaml config.yaml
+2024-09-11 18:27:03,604 INFO    SenderThread:20816 [dir_watcher.py:finish():402] scan save: C:\Users\aylin\Documents\MechInt\transformer-addition-length-generalization\wandb\run-20240911_182656-1q7ldfwo\files\output.log output.log
+2024-09-11 18:27:03,604 INFO    SenderThread:20816 [dir_watcher.py:finish():402] scan save: C:\Users\aylin\Documents\MechInt\transformer-addition-length-generalization\wandb\run-20240911_182656-1q7ldfwo\files\requirements.txt requirements.txt
+2024-09-11 18:27:03,604 INFO    SenderThread:20816 [dir_watcher.py:finish():402] scan save: C:\Users\aylin\Documents\MechInt\transformer-addition-length-generalization\wandb\run-20240911_182656-1q7ldfwo\files\wandb-metadata.json wandb-metadata.json
+2024-09-11 18:27:03,612 INFO    SenderThread:20816 [dir_watcher.py:finish():402] scan save: C:\Users\aylin\Documents\MechInt\transformer-addition-length-generalization\wandb\run-20240911_182656-1q7ldfwo\files\wandb-summary.json wandb-summary.json
+2024-09-11 18:27:03,620 INFO    SenderThread:20816 [sender.py:transition_state():626] send defer: 10
+2024-09-11 18:27:03,620 DEBUG   SenderThread:20816 [sender.py:send_request():418] send_request: poll_exit
+2024-09-11 18:27:03,620 DEBUG   HandlerThread:20816 [handler.py:handle_request():158] handle_request: defer
+2024-09-11 18:27:03,620 INFO    HandlerThread:20816 [handler.py:handle_request_defer():184] handle defer: 10
+2024-09-11 18:27:03,620 DEBUG   SenderThread:20816 [sender.py:send_request():418] send_request: defer
+2024-09-11 18:27:03,628 INFO    SenderThread:20816 [sender.py:send_request_defer():622] handle sender defer: 10
+2024-09-11 18:27:03,628 INFO    SenderThread:20816 [file_pusher.py:finish():169] shutting down file pusher
+2024-09-11 18:27:03,766 DEBUG   HandlerThread:20816 [handler.py:handle_request():158] handle_request: poll_exit
+2024-09-11 18:27:03,769 DEBUG   SenderThread:20816 [sender.py:send_request():418] send_request: poll_exit
+2024-09-11 18:27:04,013 INFO    wandb-upload_2:20816 [upload_job.py:push():130] Uploaded file C:\Users\aylin\Documents\MechInt\transformer-addition-length-generalization\wandb\run-20240911_182656-1q7ldfwo\files\requirements.txt
+2024-09-11 18:27:04,029 INFO    wandb-upload_3:20816 [upload_job.py:push():130] Uploaded file C:\Users\aylin\Documents\MechInt\transformer-addition-length-generalization\wandb\run-20240911_182656-1q7ldfwo\files\wandb-summary.json
+2024-09-11 18:27:04,062 INFO    wandb-upload_0:20816 [upload_job.py:push():130] Uploaded file C:\Users\aylin\Documents\MechInt\transformer-addition-length-generalization\wandb\run-20240911_182656-1q7ldfwo\files\config.yaml
+2024-09-11 18:27:04,678 INFO    wandb-upload_1:20816 [upload_job.py:push():130] Uploaded file C:\Users\aylin\Documents\MechInt\transformer-addition-length-generalization\wandb\run-20240911_182656-1q7ldfwo\files\output.log
+2024-09-11 18:27:04,790 DEBUG   HandlerThread:20816 [handler.py:handle_request():158] handle_request: poll_exit
+2024-09-11 18:27:04,790 DEBUG   SenderThread:20816 [sender.py:send_request():418] send_request: poll_exit
+2024-09-11 18:27:04,879 INFO    Thread-15 :20816 [sender.py:transition_state():626] send defer: 11
+2024-09-11 18:27:04,879 DEBUG   HandlerThread:20816 [handler.py:handle_request():158] handle_request: defer
+2024-09-11 18:27:04,879 INFO    HandlerThread:20816 [handler.py:handle_request_defer():184] handle defer: 11
+2024-09-11 18:27:04,879 DEBUG   SenderThread:20816 [sender.py:send_request():418] send_request: defer
+2024-09-11 18:27:04,879 INFO    SenderThread:20816 [sender.py:send_request_defer():622] handle sender defer: 11
+2024-09-11 18:27:04,879 INFO    SenderThread:20816 [file_pusher.py:join():175] waiting for file pusher
+2024-09-11 18:27:04,879 INFO    SenderThread:20816 [sender.py:transition_state():626] send defer: 12
+2024-09-11 18:27:04,879 DEBUG   HandlerThread:20816 [handler.py:handle_request():158] handle_request: defer
+2024-09-11 18:27:04,879 INFO    HandlerThread:20816 [handler.py:handle_request_defer():184] handle defer: 12
+2024-09-11 18:27:04,879 DEBUG   SenderThread:20816 [sender.py:send_request():418] send_request: defer
+2024-09-11 18:27:04,879 INFO    SenderThread:20816 [sender.py:send_request_defer():622] handle sender defer: 12
+2024-09-11 18:27:04,879 INFO    SenderThread:20816 [file_stream.py:finish():601] file stream finish called
+2024-09-11 18:27:05,090 INFO    SenderThread:20816 [file_stream.py:finish():605] file stream finish is done
+2024-09-11 18:27:05,098 INFO    SenderThread:20816 [sender.py:transition_state():626] send defer: 13
+2024-09-11 18:27:05,098 DEBUG   HandlerThread:20816 [handler.py:handle_request():158] handle_request: defer
+2024-09-11 18:27:05,098 INFO    HandlerThread:20816 [handler.py:handle_request_defer():184] handle defer: 13
+2024-09-11 18:27:05,098 DEBUG   SenderThread:20816 [sender.py:send_request():418] send_request: defer
+2024-09-11 18:27:05,098 INFO    SenderThread:20816 [sender.py:send_request_defer():622] handle sender defer: 13
+2024-09-11 18:27:05,098 INFO    SenderThread:20816 [sender.py:transition_state():626] send defer: 14
+2024-09-11 18:27:05,098 DEBUG   SenderThread:20816 [sender.py:send():391] send: final
+2024-09-11 18:27:05,098 DEBUG   SenderThread:20816 [sender.py:send():391] send: footer
+2024-09-11 18:27:05,098 DEBUG   HandlerThread:20816 [handler.py:handle_request():158] handle_request: defer
+2024-09-11 18:27:05,098 INFO    HandlerThread:20816 [handler.py:handle_request_defer():184] handle defer: 14
+2024-09-11 18:27:05,098 DEBUG   SenderThread:20816 [sender.py:send_request():418] send_request: defer
+2024-09-11 18:27:05,098 INFO    SenderThread:20816 [sender.py:send_request_defer():622] handle sender defer: 14
+2024-09-11 18:27:05,098 DEBUG   HandlerThread:20816 [handler.py:handle_request():158] handle_request: poll_exit
+2024-09-11 18:27:05,098 DEBUG   SenderThread:20816 [sender.py:send_request():418] send_request: poll_exit
+2024-09-11 18:27:05,098 DEBUG   HandlerThread:20816 [handler.py:handle_request():158] handle_request: server_info
+2024-09-11 18:27:05,098 DEBUG   HandlerThread:20816 [handler.py:handle_request():158] handle_request: poll_exit
+2024-09-11 18:27:05,098 DEBUG   HandlerThread:20816 [handler.py:handle_request():158] handle_request: get_summary
+2024-09-11 18:27:05,098 DEBUG   HandlerThread:20816 [handler.py:handle_request():158] handle_request: sampled_history
+2024-09-11 18:27:05,098 DEBUG   HandlerThread:20816 [handler.py:handle_request():158] handle_request: internal_messages
+2024-09-11 18:27:05,098 DEBUG   SenderThread:20816 [sender.py:send_request():418] send_request: server_info
+2024-09-11 18:27:05,232 DEBUG   SenderThread:20816 [sender.py:send_request():418] send_request: poll_exit
+2024-09-11 18:27:05,232 INFO    MainThread:20816 [wandb_run.py:_footer_history_summary_info():4088] rendering history
+2024-09-11 18:27:05,232 INFO    MainThread:20816 [wandb_run.py:_footer_history_summary_info():4120] rendering summary
+2024-09-11 18:27:05,232 INFO    MainThread:20816 [wandb_run.py:_footer_sync_info():4047] logging synced files
+2024-09-11 18:27:05,241 DEBUG   HandlerThread:20816 [handler.py:handle_request():158] handle_request: shutdown
+2024-09-11 18:27:05,241 INFO    HandlerThread:20816 [handler.py:finish():884] shutting down handler
+2024-09-11 18:27:06,112 INFO    WriterThread:20816 [datastore.py:close():296] close: C:\Users\aylin\Documents\MechInt\transformer-addition-length-generalization\wandb\run-20240911_182656-1q7ldfwo\run-1q7ldfwo.wandb
+2024-09-11 18:27:06,241 INFO    SenderThread:20816 [sender.py:finish():1631] shutting down sender
+2024-09-11 18:27:06,241 INFO    SenderThread:20816 [file_pusher.py:finish():169] shutting down file pusher
+2024-09-11 18:27:06,241 INFO    SenderThread:20816 [file_pusher.py:join():175] waiting for file pusher

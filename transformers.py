@@ -43,10 +43,29 @@ class Config():
     stopping_thresh: int = -1 #@param
     seed: int = 0 #@param
 
+    token_to_tokenid = {
+        '0': 0,
+        '1': 1,
+        '2': 2,
+        '3': 3,
+        '4': 4,
+        '5': 5,
+        '6': 6,
+        '7': 7,
+        '8': 8,
+        '9': 9,
+        '+': 10,
+        '=': 11,
+        'EOS': 12,
+        'PAD': 13
+    }
+
+    tokenid_to_token = {v: k for k, v in token_to_tokenid.items()}
+
     num_layers: int = 1
     batch_style: str = 'full'
-    d_vocab: int = p+1
-    n_ctx: int = 3
+    d_vocab: int = len(token_to_tokenid)
+    n_ctx: int = 12
     d_mlp: int = 4*d_model
     num_heads: int = 4
 
@@ -165,7 +184,10 @@ class Embed(nn.Module):
         self.W_E = nn.Parameter(t.randn(d_model, d_vocab)/np.sqrt(d_model))
     
     def forward(self, x):
+        print('x', x)
+        print(self.W_E[:, x])
         return t.einsum('dbp -> bpd', self.W_E[:, x])
+    
 
 #| export
 class Unembed(nn.Module):
@@ -183,6 +205,7 @@ class PosEmbed(nn.Module):
         self.W_pos = nn.Parameter(t.randn(max_ctx, d_model)/np.sqrt(d_model))
     
     def forward(self, x):
+        print('x shape', x.shape)
         return x+self.W_pos[:x.shape[-2]]
 
 #| export
@@ -437,19 +460,44 @@ from collections import defaultdict
 def gen_train_test(config: Config):
     '''Generate train and test split'''
     num_to_generate = config.p
-    pairs = [(i, j, num_to_generate) for i in range(num_to_generate) for j in range(num_to_generate)]
+    pairs = [(i,j,i+j%num_to_generate) for i in range(num_to_generate) for j in range(num_to_generate)]
     random.seed(config.seed)
     random.shuffle(pairs)
     div = int(config.frac_train*len(pairs))
-    return pairs[:div], pairs[div:]
+
+    # Convert data to strings of form "a+b=" and tokenize
+    pairs_str = [f"{i}+{j}={res}" for i, j, res in pairs]
+    tokenized = [[config.token_to_tokenid[c] for c in pair] for pair in pairs_str]
+
+    # Add PAD tokens at beginning and EOS at the end
+    final_pairs = []
+
+    for pair in pairs:
+        # print("pair", pair)
+        target_length = len(str(config.p)) * 3 + 3 # worst case for mod113: 112+110=109EOS"
+        # print("target_length", target_length)
+        pair_as_str = f"{pair[0]}+{pair[1]}={pair[2]}"
+        current_length = len(pair_as_str)
+        # print("current_length", current_length) 
+        if current_length < target_length:
+            pad_length = target_length - (current_length+1)
+            # print("pad_length", pad_length)
+        else: 
+            pad_length = 0
+        pair_as_tokenids = [config.token_to_tokenid[c] for c in pair_as_str]
+        pair_as_tokenids_padded = pad_length * [config.token_to_tokenid['PAD']] + pair_as_tokenids + [config.token_to_tokenid['EOS']]
+
+        assert len(pair_as_tokenids_padded) == int(target_length)
+        final_pairs.append(pair_as_tokenids_padded)
+    # return pairs[:div], pairs[div:]
+    return final_pairs[:div], final_pairs[div:]
+
 
 # TODO what type for model?
 def full_loss(config : Config, model: Transformer, data):
     '''Takes the cross entropy loss of the model on the data'''
-    # Take the final position only
-    logits = model(data)[:, -1]
-    labels = t.tensor([config.fn(i, j) for i, j, _ in data]).to(config.device)
-    return helpers.cross_entropy_high_precision(logits, labels)
+    # TODO: Implement decoding loss
+    pass 
 
 
 class Trainer:
@@ -466,7 +514,7 @@ class Trainer:
     def __init__(self, config : Config, model = None) -> None:
         wandb.init(project = "grokking", config = dataclasses.asdict(config))
         self.model = model if model is not None else Transformer(config, use_cache=False)
-        self.model.to(config.device)
+        # self.model.to(config.device)
         self.optimizer = optim.AdamW(self.model.parameters(), lr = config.lr, weight_decay=config.weight_decay, betas=(0.9, 0.98))
         self.scheduler = optim.lr_scheduler.LambdaLR(self.optimizer, lambda step: min(step/10, 1)) # TODO make this a config option
         self.run_name = f"grok_{int(time.time())}"
@@ -490,8 +538,8 @@ class Trainer:
             wandb.log(save_dict)
             print("Saved epoch to wandb")
         if self.config.save_models: 
-            t.save(save_dict, helpers.root/self.run_name/f"{epoch}.pth")
-            print(f"Saved model to {helpers.root/self.run_name/f'{epoch}.pth'}")
+            t.save(save_dict, root/self.run_name/f"{epoch}.pth")
+            print(f"Saved model to {root/self.run_name/f'{epoch}.pth'}")
         self.metrics_dictionary[epoch].update(save_dict)
 
     def do_a_training_step(self, epoch: int):
@@ -511,17 +559,17 @@ class Trainer:
 
     def initial_save_if_appropriate(self):
         if self.config.save_models:
-            os.mkdir(helpers.root/self.run_name)
+            os.mkdir(root/self.run_name)
             save_dict = {
                 'model': self.model.state_dict(),
                 'train_data' : self.train,
                 'test_data' : self.test}
-            t.save(save_dict, helpers.root/self.run_name/'init.pth')
+            t.save(save_dict, root/self.run_name/'init.pth')
 
 
     def post_training_save(self, save_optimizer_and_scheduler = True, log_to_wandb = True):
         if not self.config.save_models:
-            os.makedirs(helpers.root/self.run_name, exist_ok=True)
+            os.makedirs(root/self.run_name, exist_ok=True)
         save_dict = {
             'model': self.model.state_dict(),
             'train_loss': self.train_losses[-1],
@@ -535,8 +583,8 @@ class Trainer:
             save_dict['scheduler'] = self.scheduler.state_dict()
         if log_to_wandb:
             wandb.log(save_dict)
-        t.save(save_dict, helpers.root/self.run_name/f"final.pth")
-        print(f"Saved model to {helpers.root/self.run_name/f'final.pth'}")
+        t.save(save_dict, root/self.run_name/f"final.pth")
+        print(f"Saved model to {root/self.run_name/f'final.pth'}")
         self.metrics_dictionary[save_dict['epoch']].update(save_dict)
 
 
@@ -604,3 +652,7 @@ def train_model(config: Config):
     world.post_training_save(save_optimizer_and_scheduler=True)
     helpers.lines([world.train_losses, world.test_losses], labels=['train', 'test'], log_y=True)
     return world # to export the dictionary with the training metrics
+
+if __name__ == '__main__':
+    config = Config()
+    train_model(config)

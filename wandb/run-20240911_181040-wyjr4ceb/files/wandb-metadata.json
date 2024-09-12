@@ -1,0 +1,45 @@
+{
+    "os": "Windows-10-10.0.22621-SP0",
+    "python": "3.8.0",
+    "heartbeatAt": "2024-09-11T16:10:41.614691",
+    "startedAt": "2024-09-11T16:10:40.826899",
+    "docker": null,
+    "cuda": null,
+    "args": [],
+    "state": "running",
+    "program": "c:/Users/aylin/Documents/MechInt/transformer-addition-length-generalization/transformers.py",
+    "codePathLocal": "transformers.py",
+    "codePath": "transformers.py",
+    "git": {
+        "remote": "https://github.com/AylinAkkus/transformer-addition-length-generalization",
+        "commit": "0824f727f65f7165f9a528d2ee851167364468b3"
+    },
+    "email": "aylin.g.akkus@gmail.com",
+    "root": "C:/Users/aylin/Documents/MechInt/transformer-addition-length-generalization",
+    "host": "AylinSurface9",
+    "username": "aylin",
+    "executable": "C:\\Users\\aylin\\anaconda3\\envs\\transformer-addition-length-generalization\\python.exe",
+    "cpu_count": 10,
+    "cpu_count_logical": 12,
+    "cpu_freq": {
+        "current": 1733.0,
+        "min": 0.0,
+        "max": 2600.0
+    },
+    "cpu_freq_per_core": [
+        {
+            "current": 1733.0,
+            "min": 0.0,
+            "max": 2600.0
+        }
+    ],
+    "disk": {
+        "/": {
+            "total": 475.54394149780273,
+            "used": 245.00435256958008
+        }
+    },
+    "memory": {
+        "total": 15.828418731689453
+    }
+}

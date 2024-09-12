@@ -1,0 +1,14 @@
+Traceback (most recent call last):
+  File "c:/Users/aylin/Documents/MechInt/transformer-addition-length-generalization/transformers.py", line 639, in <module>
+    train_model(config)
+  File "c:/Users/aylin/Documents/MechInt/transformer-addition-length-generalization/transformers.py", line 619, in train_model
+    world = Trainer(config = config)
+  File "c:/Users/aylin/Documents/MechInt/transformer-addition-length-generalization/transformers.py", line 502, in __init__
+    self.train, self.test = gen_train_test(config = config)
+  File "c:/Users/aylin/Documents/MechInt/transformer-addition-length-generalization/transformers.py", line 469, in gen_train_test
+    tokenized = [[config.token_to_tokenid[c] for c in pair] for pair in pairs_str]
+  File "c:/Users/aylin/Documents/MechInt/transformer-addition-length-generalization/transformers.py", line 469, in <listcomp>
+    tokenized = [[config.token_to_tokenid[c] for c in pair] for pair in pairs_str]
+  File "c:/Users/aylin/Documents/MechInt/transformer-addition-length-generalization/transformers.py", line 469, in <listcomp>
+    tokenized = [[config.token_to_tokenid[c] for c in pair] for pair in pairs_str]
+KeyError: 'E'

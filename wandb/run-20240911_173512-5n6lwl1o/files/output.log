@@ -1,0 +1,25 @@
+training length =  3830
+testing length =  8939
+Run name grok_1726068915
+Traceback (most recent call last):
+  File "c:/Users/aylin/Documents/MechInt/transformer-addition-length-generalization/transformers.py", line 611, in <module>
+    train_model(config)
+  File "c:/Users/aylin/Documents/MechInt/transformer-addition-length-generalization/transformers.py", line 596, in train_model
+    train_loss, test_loss = world.do_a_training_step(epoch)
+  File "c:/Users/aylin/Documents/MechInt/transformer-addition-length-generalization/transformers.py", line 500, in do_a_training_step
+    train_loss = full_loss(config = self.config, model = self.model, data = self.train)
+  File "c:/Users/aylin/Documents/MechInt/transformer-addition-length-generalization/transformers.py", line 451, in full_loss
+    logits = model(data)[:, -1]
+  File "C:\Users\aylin\anaconda3\envs\transformer-addition-length-generalization\lib\site-packages\torch\nn\modules\module.py", line 1553, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "C:\Users\aylin\anaconda3\envs\transformer-addition-length-generalization\lib\site-packages\torch\nn\modules\module.py", line 1562, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "c:/Users/aylin/Documents/MechInt/transformer-addition-length-generalization/transformers.py", line 307, in forward
+    x = self.embed(x)
+  File "C:\Users\aylin\anaconda3\envs\transformer-addition-length-generalization\lib\site-packages\torch\nn\modules\module.py", line 1553, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "C:\Users\aylin\anaconda3\envs\transformer-addition-length-generalization\lib\site-packages\torch\nn\modules\module.py", line 1562, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "c:/Users/aylin/Documents/MechInt/transformer-addition-length-generalization/transformers.py", line 168, in forward
+    print('x shape', x.shape)
+AttributeError: 'list' object has no attribute 'shape'

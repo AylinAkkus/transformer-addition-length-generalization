@@ -1,0 +1,10 @@
+Traceback (most recent call last):
+  File "c:/Users/aylin/Documents/MechInt/transformer-addition-length-generalization/transformers.py", line 651, in <module>
+    train_model(config)
+  File "c:/Users/aylin/Documents/MechInt/transformer-addition-length-generalization/transformers.py", line 631, in train_model
+    world = Trainer(config = config)
+  File "c:/Users/aylin/Documents/MechInt/transformer-addition-length-generalization/transformers.py", line 514, in __init__
+    self.train, self.test = gen_train_test(config = config)
+  File "c:/Users/aylin/Documents/MechInt/transformer-addition-length-generalization/transformers.py", line 477, in gen_train_test
+    pad_length = target_length - (current_length+1)
+TypeError: unsupported operand type(s) for -: 'str' and 'int'

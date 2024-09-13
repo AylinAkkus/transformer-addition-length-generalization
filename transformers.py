@@ -33,7 +33,7 @@ class Config():
     d_model: int = 128 #@param
     fn_name: str = 'add' #@param ['add', 'subtract', 'x2xyy2','rand']
     frac_train: float = 0.3 #@param
-    num_epochs: int = 1000 #@param
+    num_epochs: int = 10 #@param
     save_models: bool = True #@param
     save_every: int = 1000 #@param
 
@@ -79,7 +79,7 @@ class Config():
 
     use_ln: bool = False
 
-    take_metrics_every_n_epochs: int = 1000 #@param
+    take_metrics_every_n_epochs: int = 10 #@param
 
     @property
     def d_head(self):
@@ -476,7 +476,7 @@ from collections import defaultdict
 def gen_train_test(config: Config):
     '''Generate train and test split'''
     num_to_generate = config.p
-    pairs = [(i,j,i+j%num_to_generate) for i in range(num_to_generate) for j in range(num_to_generate)]
+    pairs = [(i,j,(i+j)%num_to_generate) for i in range(num_to_generate) for j in range(num_to_generate)]
     random.seed(config.seed)
     random.shuffle(pairs)
     div = int(config.frac_train*len(pairs))
@@ -520,18 +520,17 @@ def full_loss(config : Config, model: Transformer, data, idx):
     '''Takes the cross entropy loss of the model on the data'''
     # TODO: Implement decoding loss
     logits = model(data)
+    cross_entropy_per_seq_losses = []
 
     for i, dat in enumerate(data):
         start_idx = int(idx[i, 0])
         stop_idx = int(idx[i, 1])
-        print('start_idx', start_idx)
-        print('stop_idx', stop_idx)
         relevant_logits = logits[i][start_idx:stop_idx+1]
-        targets = data[i][start_idx+1:stop_idx+2]
-        print('entire data', data[i])
-        print('targets', targets)
-    
-    return helpers.cross_entropy_high_precision(relevant_logits, targets)
+        targets = t.tensor(data[i][start_idx+1:stop_idx+2]).to(config.device)
+        cross_entropy_per_seq = helpers.cross_entropy_high_precision(relevant_logits, targets)
+        cross_entropy_per_seq_losses.append(cross_entropy_per_seq)
+    # print('cross_entropy_per_seq_losses', cross_entropy_per_seq_losses)
+    return t.stack(cross_entropy_per_seq_losses).mean()
 
 class Trainer:
     '''TODO
@@ -581,7 +580,7 @@ class Trainer:
         test_loss = full_loss(config = self.config, model = self.model, data = self.test, idx=self.test_target_idx)
         self.train_losses.append(train_loss.item())
         self.test_losses.append(test_loss.item())
-        if epoch % 100 == 0:
+        if epoch % 1 == 0:
             # TODO is this ok? this was np.log, and it was barking at me ; i think np.log was being interpreted as a logging module
             print(f'Epoch {epoch}, train loss {t.log(train_loss).item():.4f}, test loss {t.log(test_loss).item():.4f}')
         train_loss.backward()

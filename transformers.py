@@ -20,6 +20,7 @@ from helpers import *
 from dataclasses import dataclass
 import os
 import wandb
+import re
 
 # %% ../transformer.ipynb 4
 # TODO does dataclass really require type annotations lol
@@ -481,10 +482,6 @@ def gen_train_test(config: Config):
     random.shuffle(pairs)
     div = int(config.frac_train*len(pairs))
 
-    # Convert data to strings of form "a+b=" and tokenize
-    pairs_str = [f"{i}+{j}={res}" for i, j, res in pairs]
-    tokenized = [[config.token_to_tokenid[c] for c in pair] for pair in pairs_str]
-
     # Add PAD tokens at beginning and EOS at the end
     final_pairs = []
     target_idx = np.zeros((len(pairs), 2))
@@ -547,6 +544,7 @@ class Trainer:
         wandb.init(project = "grokking", config = dataclasses.asdict(config))
         self.model = model if model is not None else Transformer(config, use_cache=False)
         self.model.to(config.device)
+        self.tokenizer = Tokenizer()
         self.optimizer = optim.AdamW(self.model.parameters(), lr = config.lr, weight_decay=config.weight_decay, betas=(0.9, 0.98))
         self.scheduler = optim.lr_scheduler.LambdaLR(self.optimizer, lambda step: min(step/10, 1)) # TODO make this a config option
         self.run_name = f"grok_{int(time.time())}"
@@ -686,6 +684,20 @@ def train_model(config: Config):
     helpers.lines([world.train_losses, world.test_losses], labels=['train', 'test'], log_y=True)
     return world # to export the dictionary with the training metrics
 
+class Tokenizer():
+    def tokenize(self, sequence):
+        sorted_vocab = sorted(config.token_to_tokenid.keys(), key=lambda x: len(x), reverse=True)
+        pattern = '|'.join(re.escape(token) for token in sorted_vocab)
+        # TODO: Check whether there are tokens not in the vocab
+        return [config.token_to_tokenid[token] for token in re.findall(pattern, sequence)]
+    
+    def detokenize(self, tokenized):
+        return ''.join([config.tokenid_to_token[token] for token in tokenized])
+        
+
 if __name__ == '__main__':
     config = Config()
-    train_model(config)
+    # train_model(config)
+    tokenizer = Tokenizer()
+    print(tokenizer.tokenize('1+2=3EOSEOSPADPAD'))
+    

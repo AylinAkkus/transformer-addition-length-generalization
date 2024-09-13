@@ -1,3 +1,2 @@
-saved_runs/
-
+saved_runs/*.pth
 wandb/

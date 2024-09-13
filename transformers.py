@@ -28,15 +28,15 @@ import re
 
 @dataclass(frozen = True)
 class Config():
-    lr: float = 1e-3 #@param
+    lr: float = 3e-3 #@param
     weight_decay: float = 1.0 #@param
     p: int = 113 #@param
     d_model: int = 128 #@param
     fn_name: str = 'add' #@param ['add', 'subtract', 'x2xyy2','rand']
     frac_train: float = 0.3 #@param
-    num_epochs: int = 10 #@param
+    num_epochs: int = 500 #@param
     save_models: bool = True #@param
-    save_every: int = 1000 #@param
+    save_every: int = 25 #@param
 
     # TODO for the first 1000 steps, save every 10 because 'interesting stuff happens at the start'
     # TODO add a helper function to generate indices here
@@ -504,9 +504,11 @@ def gen_train_test(config: Config):
         target_idx[i] = (question_length, question_length + result_length)
 
         pair_as_tokenids = [config.token_to_tokenid[c] for c in pair_as_str]
-        pair_as_tokenids_padded =  pair_as_tokenids + [config.token_to_tokenid['EOS']] + pad_length * [config.token_to_tokenid['PAD']]
+        pair_as_tokenids_padded =  pair_as_tokenids + [config.token_to_tokenid['EOS']] 
+        # we add 1 to pad_length because we will slice to make it the target
+        pair_as_tokenids_padded += (pad_length + 1) * [config.token_to_tokenid['PAD']]
 
-        assert len(pair_as_tokenids_padded) == int(target_length)
+        assert len(pair_as_tokenids_padded) == int(target_length) + 1
         final_pairs.append(pair_as_tokenids_padded)
 
     return final_pairs[:div], final_pairs[div:], target_idx[:div], target_idx[div:]
@@ -516,15 +518,19 @@ def gen_train_test(config: Config):
 def full_loss(config : Config, model: Transformer, data, idx):
     '''Takes the cross entropy loss of the model on the data'''
     # TODO: Implement decoding loss
-    logits = model(data)
+    # delete last element of each sequence in batch
+    fwd_data = [d[:-1] for d in data]
+    logits = model(fwd_data)
     cross_entropy_per_seq_losses = []
 
     for i, dat in enumerate(data):
         start_idx = int(idx[i, 0])
         stop_idx = int(idx[i, 1])
         relevant_logits = logits[i][start_idx:stop_idx+1]
-        targets = t.tensor(data[i][start_idx+1:stop_idx+2]).to(config.device)
-        cross_entropy_per_seq = helpers.cross_entropy_high_precision(relevant_logits, targets)
+        targets = t.tensor(data[i][start_idx+1:stop_idx+2], dtype=t.long).to(config.device)
+        #print(relevant_logits.shape)
+        #print(targets.shape)
+        cross_entropy_per_seq = F.cross_entropy(relevant_logits, targets)
         cross_entropy_per_seq_losses.append(cross_entropy_per_seq)
     # print('cross_entropy_per_seq_losses', cross_entropy_per_seq_losses)
     return t.stack(cross_entropy_per_seq_losses).mean()
@@ -546,7 +552,20 @@ class Trainer:
         self.model.to(config.device)
         self.tokenizer = Tokenizer()
         self.optimizer = optim.AdamW(self.model.parameters(), lr = config.lr, weight_decay=config.weight_decay, betas=(0.9, 0.98))
-        self.scheduler = optim.lr_scheduler.LambdaLR(self.optimizer, lambda step: min(step/10, 1)) # TODO make this a config option
+
+        def lr_lambda(step, num_epochs=config.num_epochs):
+            n_warmup = 10
+            if step <= n_warmup:
+                return min(step / n_warmup, 1)  # Linear warm-up
+            else:
+                # Linear decay from the end of the warm-up to 1/10 of the original LR
+                decay_factor = 0.1  # Final LR will be 1/10 of the original LR
+                total_decay_steps = num_epochs - n_warmup
+                step_after_warmup = step - n_warmup
+                decay = 1 - (1 - decay_factor) * (step_after_warmup / total_decay_steps)
+                return max(decay, decay_factor)  # Ensures LR never goes below 1/10
+
+        self.scheduler = optim.lr_scheduler.LambdaLR(self.optimizer, lr_lambda) # TODO make this a config option
         self.run_name = f"grok_{int(time.time())}"
         self.train, self.test, self.train_target_idx, self.test_target_idx = gen_train_test(config = config)
         self.metrics_dictionary = defaultdict(dict) # so we can safely call 'update' on keys
@@ -583,6 +602,8 @@ class Trainer:
             print(f'Epoch {epoch}, train loss {t.log(train_loss).item():.4f}, test loss {t.log(test_loss).item():.4f}')
         train_loss.backward()
         self.optimizer.step()
+        # print the learning rate
+        # print("Learning rate: ", self.scheduler.get_last_lr())
         self.scheduler.step()
         self.optimizer.zero_grad()
         return train_loss, test_loss

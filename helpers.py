@@ -108,7 +108,7 @@ def cross_entropy_high_precision(logits, labels):
     # confident data and can only return multiples of 1.2e-7 (the smallest float x
     # such that 1+x is different from 1 in float32). This leads to loss spikes 
     # and dodgy gradients
-    logprobs = F.log_softmax(logits.to(torch.float32), dim=-1)
+    logprobs = F.log_softmax(logits.to(torch.float64), dim=-1)
     prediction_logprobs = torch.gather(logprobs, index=labels[:, None], dim=-1)
     loss = -torch.mean(prediction_logprobs)
     return loss

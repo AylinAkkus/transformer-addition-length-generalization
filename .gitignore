@@ -1,2 +1,4 @@
 saved_runs/*.pth
 wandb/
+large_files/
+__pycache__/

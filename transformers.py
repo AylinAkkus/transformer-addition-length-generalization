@@ -20,6 +20,7 @@ from helpers import *
 from dataclasses import dataclass
 import os
 import wandb
+from datetime import datetime
 import re
 
 # %% ../transformer.ipynb 4
@@ -36,7 +37,7 @@ class Config():
     frac_train: float = 0.3 #@param
     num_epochs: int = 500 #@param
     save_models: bool = True #@param
-    save_every: int = 25 #@param
+    save_every: int = 5 #@param
 
     # TODO for the first 1000 steps, save every 10 because 'interesting stuff happens at the start'
     # TODO add a helper function to generate indices here
@@ -205,7 +206,6 @@ class PosEmbed(nn.Module):
         self.W_pos = nn.Parameter(t.randn(max_ctx, d_model)/np.sqrt(d_model))
     
     def forward(self, x):
-        #print('x shape', x.shape)
         return x+self.W_pos[:x.shape[-2]]
 
 #| export
@@ -488,17 +488,15 @@ def gen_train_test(config: Config):
     target_idx = np.zeros((len(pairs), 2))
 
     for i, pair in enumerate(pairs):
-        # print("pair", pair)
         target_length = len(str(config.p)) * 3 + 3 # worst case for mod113: 112+110=109EOS"
-        # print("target_length", target_length)
+
         pair_as_str = f"{pair[0]}+{pair[1]}={pair[2]}"
         current_length = len(pair_as_str)
         question_length = len(f"{pair[0]}+{pair[1]}")
         result_length = len(f"={pair[2]}")
-        # print("current_length", current_length) 
+ 
         if current_length < target_length:
             pad_length = target_length - (current_length+1)
-            # print("pad_length", pad_length)
         else: 
             pad_length = 0
 
@@ -529,12 +527,15 @@ def full_loss(config : Config, model: Transformer, data, idx):
         stop_idx = int(idx[i, 1])
         relevant_logits = logits[i][start_idx:stop_idx+1]
         targets = t.tensor(data[i][start_idx+1:stop_idx+2], dtype=t.long).to(config.device)
-        #print(relevant_logits.shape)
-        #print(targets.shape)
+        if not all(0 <= label < config.d_vocab for label in targets):
+            raise ValueError(f"Invalid label found in sequence {i}: {targets}")
+
         cross_entropy_per_seq = F.cross_entropy(relevant_logits, targets)
         cross_entropy_per_seq_losses.append(cross_entropy_per_seq)
-    # print('cross_entropy_per_seq_losses', cross_entropy_per_seq_losses)
-    return t.stack(cross_entropy_per_seq_losses).mean()
+
+    loss = t.stack(cross_entropy_per_seq_losses).mean()
+
+    return loss
 
 class Trainer:
     '''TODO
@@ -566,7 +567,7 @@ class Trainer:
                 return max(decay, decay_factor)  # Ensures LR never goes below 1/10
 
         self.scheduler = optim.lr_scheduler.LambdaLR(self.optimizer, lr_lambda) # TODO make this a config option
-        self.run_name = f"grok_{int(time.time())}"
+        self.run_name = f"mod_digit_add_{datetime.now().strftime("%Y-%m-%d_%H-%M")}"
         self.train, self.test, self.train_target_idx, self.test_target_idx = gen_train_test(config = config)
         self.metrics_dictionary = defaultdict(dict) # so we can safely call 'update' on keys
         print('training length = ', len(self.train))
@@ -593,7 +594,9 @@ class Trainer:
 
     def do_a_training_step(self, epoch: int):
         '''returns train_loss, test_loss'''
+        self.model.train()
         train_loss = full_loss(config = self.config, model = self.model, data = self.train, idx=self.train_target_idx)
+        self.model.eval()
         test_loss = full_loss(config = self.config, model = self.model, data = self.test, idx=self.test_target_idx)
         self.train_losses.append(train_loss.item())
         self.test_losses.append(test_loss.item())

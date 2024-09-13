@@ -3,7 +3,7 @@
 # %% auto 0
 __all__ = ['Config', 'HookPoint', 'Embed', 'Unembed', 'PosEmbed', 'LayerNorm', 'Attention', 'MLP', 'TransformerBlock',
            'Transformer', 'make_fourier_basis', 'calculate_key_freqs', 'get_components_of_trig_loss',
-           'calculate_excluded_loss', 'calculate_trig_loss', 'calculate_coefficients', 'gen_train_test', 'full_loss',
+           'calculate_excluded_loss', 'calculate_trig_loss', 'calculate_coefficients', 'Tokenizer', 'gen_train_test', 'full_loss',
            'Trainer', 'train_model']
 
 # %% ../transformer.ipynb 3
@@ -475,6 +475,7 @@ import dataclasses
 from collections import defaultdict
 
 def gen_train_test(config: Config):
+    tokenizer = Tokenizer()
     '''Generate train and test split'''
     num_to_generate = config.p
     pairs = [(i,j,(i+j)%num_to_generate) for i in range(num_to_generate) for j in range(num_to_generate)]
@@ -503,7 +504,7 @@ def gen_train_test(config: Config):
 
         target_idx[i] = (question_length, question_length + result_length)
 
-        pair_as_tokenids = [config.token_to_tokenid[c] for c in pair_as_str]
+        pair_as_tokenids = tokenizer.tokenize(pair_as_str)
         pair_as_tokenids_padded =  pair_as_tokenids + [config.token_to_tokenid['EOS']] 
         # we add 1 to pad_length because we will slice to make it the target
         pair_as_tokenids_padded += (pad_length + 1) * [config.token_to_tokenid['PAD']]
@@ -550,7 +551,6 @@ class Trainer:
         wandb.init(project = "grokking", config = dataclasses.asdict(config))
         self.model = model if model is not None else Transformer(config, use_cache=False)
         self.model.to(config.device)
-        self.tokenizer = Tokenizer()
         self.optimizer = optim.AdamW(self.model.parameters(), lr = config.lr, weight_decay=config.weight_decay, betas=(0.9, 0.98))
 
         def lr_lambda(step, num_epochs=config.num_epochs):
@@ -706,19 +706,20 @@ def train_model(config: Config):
     return world # to export the dictionary with the training metrics
 
 class Tokenizer():
+    def __init__(self, config: Config):
+        self.config = config
+        
     def tokenize(self, sequence):
-        sorted_vocab = sorted(config.token_to_tokenid.keys(), key=lambda x: len(x), reverse=True)
+        sorted_vocab = sorted(self.config.token_to_tokenid.keys(), key=lambda x: len(x), reverse=True)
         pattern = '|'.join(re.escape(token) for token in sorted_vocab)
         # TODO: Check whether there are tokens not in the vocab
-        return [config.token_to_tokenid[token] for token in re.findall(pattern, sequence)]
+        return [self.config.token_to_tokenid[token] for token in re.findall(pattern, sequence)]
     
     def detokenize(self, tokenized):
-        return ''.join([config.tokenid_to_token[token] for token in tokenized])
+        return ''.join([self.config.tokenid_to_token[token] for token in tokenized])
         
 
 if __name__ == '__main__':
     config = Config()
-    # train_model(config)
-    tokenizer = Tokenizer()
-    print(tokenizer.tokenize('1+2=3EOSEOSPADPAD'))
+    train_model(config)
     

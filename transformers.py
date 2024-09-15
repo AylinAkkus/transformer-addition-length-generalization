@@ -34,8 +34,8 @@ class Config():
     p: int = 113 #@param
     d_model: int = 128 #@param
     fn_name: str = 'add' #@param ['add', 'subtract', 'x2xyy2','rand']
-    frac_train: float = 0.3 #@param
-    num_epochs: int = 500 #@param
+    frac_train: float = 0.9 #@param
+    num_epochs: int = 1000 #@param
     save_models: bool = True #@param
     save_every: int = 5 #@param
 
@@ -340,8 +340,11 @@ class Transformer(nn.Module):
         # Greedy generation for a sequence (non-batched)
 
         while len(x) <= self.config.n_ctx:
-
-            logits = self([x])[0, -1]
+            try:
+                logits = self([x])[0, -1]
+            except:
+                print(x)
+                raise ValueError
             next_token = t.argmax(logits).item()
             x.append(next_token)
 
@@ -475,7 +478,7 @@ import dataclasses
 from collections import defaultdict
 
 def gen_train_test(config: Config):
-    tokenizer = Tokenizer()
+    tokenizer = Tokenizer(config)
     '''Generate train and test split'''
     num_to_generate = config.p
     pairs = [(i,j,(i+j)%num_to_generate) for i in range(num_to_generate) for j in range(num_to_generate)]
@@ -555,12 +558,12 @@ class Trainer:
         self.optimizer = optim.AdamW(self.model.parameters(), lr = config.lr, weight_decay=config.weight_decay, betas=(0.9, 0.98))
 
         def lr_lambda(step, num_epochs=config.num_epochs):
-            n_warmup = 10
+            n_warmup = 20
             if step <= n_warmup:
                 return min(step / n_warmup, 1)  # Linear warm-up
             else:
                 # Linear decay from the end of the warm-up to 1/10 of the original LR
-                decay_factor = 0.1  # Final LR will be 1/10 of the original LR
+                decay_factor = 0.03  # Final LR will be 1/10 of the original LR
                 total_decay_steps = num_epochs - n_warmup
                 step_after_warmup = step - n_warmup
                 decay = 1 - (1 - decay_factor) * (step_after_warmup / total_decay_steps)

@@ -567,7 +567,7 @@ class Trainer:
                 return max(decay, decay_factor)  # Ensures LR never goes below 1/10
 
         self.scheduler = optim.lr_scheduler.LambdaLR(self.optimizer, lr_lambda) # TODO make this a config option
-        self.run_name = f"mod_digit_add_{datetime.now().strftime("%Y-%m-%d_%H-%M")}"
+        self.run_name = f"mod_digit_add_{datetime.now().strftime('%Y-%m-%d_%H-%M')}"
         self.train, self.test, self.train_target_idx, self.test_target_idx = gen_train_test(config = config)
         self.metrics_dictionary = defaultdict(dict) # so we can safely call 'update' on keys
         print('training length = ', len(self.train))

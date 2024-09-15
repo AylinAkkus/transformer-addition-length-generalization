@@ -9,12 +9,13 @@
 - Vary positional encodings (current implementations learns the positional encodings)
 - Change folder structure and save the config for different runs [MERT]
 
-  # To Read
+# To Read
 
 Positional encoding related stuff:
+
 - https://arxiv.org/pdf/2405.17399v1 (Transformers Can Do Arithmetic with the
 Right Embeddings)
-- The Impact of Positional Encoding on Length
+- https://arxiv.org/pdf/2305.19466 The Impact of Positional Encoding on Length
 Generalization in Transformers (NoPE paper)
 
 

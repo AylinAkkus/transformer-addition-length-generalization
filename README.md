@@ -8,6 +8,7 @@
 - Add a seed() to fix the train and test set
 - Vary positional encodings (current implementations learns the positional encodings)
 - Change folder structure and save the config for different runs [MERT]
+- Add the conda environment file
 
 # To Read
 

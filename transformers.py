@@ -22,6 +22,7 @@ import os
 import wandb
 from datetime import datetime
 import re
+import pandas as pd
 
 # %% ../transformer.ipynb 4
 # TODO does dataclass really require type annotations lol
@@ -479,16 +480,26 @@ from collections import defaultdict
 
 def gen_train_test(config: Config):
     tokenizer = Tokenizer(config)
-    '''Generate train and test split'''
+    '''Generate a dataframe with:
+    - operator_1, operator_2, result
+    - input string of form: "operator_1+operator_2=resultEOSPADPAD"
+    - start index of the result
+    - a bool indicating whether the sequence is in the training set
+    '''
     num_to_generate = config.p
     pairs = [(i,j,(i+j)%num_to_generate) for i in range(num_to_generate) for j in range(num_to_generate)]
+    df = pd.DataFrame(pairs, columns=['operator_1', 'operator_2', 'result'])
+
+    # Generate the train-test split
     random.seed(config.seed)
-    random.shuffle(pairs)
-    div = int(config.frac_train*len(pairs))
+    num_train = int(config.frac_train * len(pairs))
+    num_test = len(pairs) - num_train
+    train_idx = np.array([True]*num_train + [False]*num_test)
+    random.shuffle(train_idx)
+    df['is train'] = train_idx
 
     # Add PAD tokens at beginning and EOS at the end
     final_pairs = []
-    target_idx = np.zeros((len(pairs), 2))
 
     for i, pair in enumerate(pairs):
         target_length = len(str(config.p)) * 3 + 3 # worst case for mod113: 112+110=109EOS"
@@ -503,7 +514,6 @@ def gen_train_test(config: Config):
         else: 
             pad_length = 0
 
-        target_idx[i] = (question_length, question_length + result_length)
 
         pair_as_tokenids = tokenizer.tokenize(pair_as_str)
         pair_as_tokenids_padded =  pair_as_tokenids + [config.token_to_tokenid['EOS']] 
@@ -513,7 +523,18 @@ def gen_train_test(config: Config):
         assert len(pair_as_tokenids_padded) == int(target_length) + 1
         final_pairs.append(pair_as_tokenids_padded)
 
-    return final_pairs[:div], final_pairs[div:], target_idx[:div], target_idx[div:]
+    df['tokenized'] = final_pairs
+    start_idx = df["operator_1"].astype(str).str.len() + df["operator_2"].astype(str).str.len() + 1
+    end_idx = start_idx + df["result"].astype(str).str.len()
+    df['target_idx'] = list(zip(start_idx, end_idx))
+    # Write the data to a file
+    path = './data/mod113.csv'
+    df.to_csv(path)
+    train_tokens = df[df['is train']]['tokenized'].tolist()
+    test_tokens = df[~df['is train']]['tokenized'].tolist()
+    train_target_idx = df['target_idx'].values.tolist()
+    test_target_idx = df['target_idx'].values.tolist()
+    return train_tokens, test_tokens, train_target_idx, test_target_idx
 
 
 # TODO what type for model?
@@ -526,8 +547,8 @@ def full_loss(config : Config, model: Transformer, data, idx):
     cross_entropy_per_seq_losses = []
 
     for i, dat in enumerate(data):
-        start_idx = int(idx[i, 0])
-        stop_idx = int(idx[i, 1])
+        start_idx = int(idx[i][0])
+        stop_idx = int(idx[i][1])
         relevant_logits = logits[i][start_idx:stop_idx+1]
         targets = t.tensor(data[i][start_idx+1:stop_idx+2], dtype=t.long).to(config.device)
         if not all(0 <= label < config.d_vocab for label in targets):

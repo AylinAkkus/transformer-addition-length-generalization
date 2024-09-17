@@ -23,6 +23,7 @@ import wandb
 from datetime import datetime
 import re
 import pandas as pd
+import json
 
 # %% ../transformer.ipynb 4
 # TODO does dataclass really require type annotations lol
@@ -104,26 +105,21 @@ class Config():
     @property
     def fn(self):
         return self.fns_dict[self.fn_name]
+    
+    def serialize(self):
+        """Serialize the config to JSON so that I can be stored in the saved_runs folder"""
+        config_as_dict = dataclasses.asdict(self)
+        # Ignore device as it can not be serialized
+        del config_as_dict['device']
+        return json.dumps(config_as_dict)
 
     def is_train_is_test(self, train):
         '''Creates an array of Boolean indices according to whether each data point is in train or test.
         Used to index into the big batch of all possible data'''
-        # TODO probably the wrong place for this
-        is_train = []
-        is_test = []
-        for x in range(self.p):
-            for y in range(self.p):
-                if (x, y, 113) in train:
-                    is_train.append(True)
-                    is_test.append(False)
-                else:
-                    is_train.append(False)
-                    is_test.append(True)
-        is_train = np.array(is_train)
-        is_test = np.array(is_test)
-        return (is_train, is_test)
+        pass
 
     def is_it_time_to_save(self, epoch):
+        # TODO: Aylin
         return (epoch % self.save_every == 0)
 
     def is_it_time_to_take_metrics(self, epoch):
@@ -528,13 +524,13 @@ def gen_train_test(config: Config):
     end_idx = start_idx + df["result"].astype(str).str.len()
     df['target_idx'] = list(zip(start_idx, end_idx))
     # Write the data to a file
-    path = './data/mod113.csv'
-    df.to_csv(path)
+    # path = './data/mod113.csv'
+    # df.to_csv(path)
     train_tokens = df[df['is train']]['tokenized'].tolist()
     test_tokens = df[~df['is train']]['tokenized'].tolist()
     train_target_idx = df['target_idx'].values.tolist()
     test_target_idx = df['target_idx'].values.tolist()
-    return train_tokens, test_tokens, train_target_idx, test_target_idx
+    return df, train_tokens, test_tokens, train_target_idx, test_target_idx, 
 
 
 # TODO what type for model?
@@ -592,7 +588,7 @@ class Trainer:
 
         self.scheduler = optim.lr_scheduler.LambdaLR(self.optimizer, lr_lambda) # TODO make this a config option
         self.run_name = f"mod_digit_add_{datetime.now().strftime('%Y-%m-%d_%H-%M')}"
-        self.train, self.test, self.train_target_idx, self.test_target_idx = gen_train_test(config = config)
+        self.data, self.train, self.test, self.train_target_idx, self.test_target_idx = gen_train_test(config = config)
         self.metrics_dictionary = defaultdict(dict) # so we can safely call 'update' on keys
         print('training length = ', len(self.train))
         print('testing length = ', len(self.test))
@@ -636,13 +632,24 @@ class Trainer:
         return train_loss, test_loss
 
     def initial_save_if_appropriate(self):
+        """
+        Save the model, config and entire data at the start of training
+        """
         if self.config.save_models:
             os.mkdir(root/self.run_name)
-            save_dict = {
-                'model': self.model.state_dict(),
-                'train_data' : self.train,
-                'test_data' : self.test}
+
+            # Save model
+            save_dict = {'model': self.model.state_dict()}
             t.save(save_dict, root/self.run_name/'init.pth')
+            
+            # Save the config
+            config_json = self.config.serialize()
+            with open(root/self.run_name/'config.json', 'w') as f:
+                f.write(config_json)
+
+            # Save entire data as csv
+            self.data.to_csv(root/self.run_name/'data.csv')
+
 
 
     def post_training_save(self, save_optimizer_and_scheduler = True, log_to_wandb = True):

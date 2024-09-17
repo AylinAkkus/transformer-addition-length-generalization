@@ -7,9 +7,9 @@
 - Try character level tokenization with 0s to fix the varying length (e.g. 012+031=043EOSPAD), do another accuracy table
 - Add a seed() to fix the train and test set [DONE]
 - Vary positional encodings (current implementations learns the positional encodings)
-- Change folder structure, save the config and dataset for different runs [Aylin]
-- Write a function to filter for each case (num of operators and result, train/test) [AYLIN]
-- Add the conda environment file [MERT]
+- Change folder structure and save the config and dataset for different runs [Aylin]
+- Add the conda environment file [Mert]
+- Add a saving scheduling function (save a lot first 50 epochs and then save less)
 
 # To Read
 

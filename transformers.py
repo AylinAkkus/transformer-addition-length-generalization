@@ -36,10 +36,10 @@ class Config():
     p: int = 113 #@param
     d_model: int = 128 #@param
     fn_name: str = 'add' #@param ['add', 'subtract', 'x2xyy2','rand']
-    frac_train: float = 0.9 #@param
-    num_epochs: int = 1000 #@param
+    frac_train: float = 0.1 #@param
+    num_epochs: int = 20000 #@param
     save_models: bool = True #@param
-    save_every: int = 5 #@param
+    save_every: int = 50 #@param
 
     # TODO for the first 1000 steps, save every 10 because 'interesting stuff happens at the start'
     # TODO add a helper function to generate indices here
@@ -336,12 +336,11 @@ class Transformer(nn.Module):
     def generate_greedy(self, x):
         # Greedy generation for a sequence (non-batched)
 
+        # make a copy of x
+        x = x.copy()
+
         while len(x) <= self.config.n_ctx:
-            try:
-                logits = self([x])[0, -1]
-            except:
-                print(x)
-                raise ValueError
+            logits = self([x])[0, -1]
             next_token = t.argmax(logits).item()
             x.append(next_token)
 
@@ -745,7 +744,9 @@ def train_model(config: Config):
     world.initial_save_if_appropriate()
 
     for epoch in range(config.num_epochs):
+        t0 = time.time()
         train_loss, test_loss = world.do_a_training_step(epoch)
+        print(f"Epoch {epoch} took {time.time() - t0:.2f} seconds")
         if test_loss.item() < config.stopping_thresh:
             break
         if config.is_it_time_to_save(epoch = epoch):

@@ -477,14 +477,14 @@ from collections import defaultdict
 def gen_train_test(config: Config):
     tokenizer = Tokenizer(config)
     '''Generate a dataframe with:
-    - operator_1, operator_2, result
+    - operand_1, operand_2, result
     - input string of form: "operator_1+operator_2=resultEOSPADPAD"
     - start index of the result
     - a bool indicating whether the sequence is in the training set
     '''
     num_to_generate = config.p
     pairs = [(i,j,(i+j)%num_to_generate) for i in range(num_to_generate) for j in range(num_to_generate)]
-    df = pd.DataFrame(pairs, columns=['operator_1', 'operator_2', 'result'])
+    df = pd.DataFrame(pairs, columns=['operand_1', 'operand_2', 'result'])
 
     # Generate the train-test split
     random.seed(config.seed)
@@ -520,7 +520,7 @@ def gen_train_test(config: Config):
         final_pairs.append(pair_as_tokenids_padded)
 
     df['tokenized'] = final_pairs
-    start_idx = df["operator_1"].astype(str).str.len() + df["operator_2"].astype(str).str.len() + 1
+    start_idx = df["operand_1"].astype(str).str.len() + df["operand_2"].astype(str).str.len() + 1
     end_idx = start_idx + df["result"].astype(str).str.len()
     df['target_idx'] = list(zip(start_idx, end_idx))
     # Write the data to a file
@@ -532,6 +532,26 @@ def gen_train_test(config: Config):
     test_target_idx = df['target_idx'].values.tolist()
     return df, train_tokens, test_tokens, train_target_idx, test_target_idx, 
 
+def filter_data(data, train, operand_1_len=None, operand_2_len=None, res_len=None):
+    """
+    Selects data from the data frame based on the length of the operands and the result.
+    Distingushes between training and testing data.
+    """
+    if operand_1_len:
+        data = data[data['operand_1'].apply(lambda x: len(str(x))==operand_1_len)]
+
+    if operand_2_len:
+        data = data[data['operand_2'].apply(lambda x: len(str(x))==operand_2_len)]
+    
+    if res_len:
+        data = data[data['result'].apply(lambda x: len(str(x))==res_len)]
+    
+    assert train in [True, False]
+
+    if train:
+        return data[data['is train']]
+    else:
+        return data[~data["is train"]]
 
 # TODO what type for model?
 def full_loss(config : Config, model: Transformer, data, idx):

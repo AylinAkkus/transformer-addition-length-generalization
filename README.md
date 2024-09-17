@@ -5,9 +5,10 @@
 # To Do:
 - For charcter level tokenization with varying lenghts (e.g. 12+31=43EOSPADPADPADPAD) do an accuracy table for all cases (e.g. |operator 1|= |operator 2| = 1; |operator 1| = 1,  |operator 2| = 2) etc) on train and test, maybe do different seeds and plot a distribution for each category
 - Try character level tokenization with 0s to fix the varying length (e.g. 012+031=043EOSPAD), do another accuracy table
-- Add a seed() to fix the train and test set
+- Add a seed() to fix the train and test set [DONE]
 - Vary positional encodings (current implementations learns the positional encodings)
 - Change folder structure, save the config and dataset for different runs [Aylin]
+- Write a function to filter for each case (num of operators and result, train/test) [AYLIN]
 - Add the conda environment file [MERT]
 
 # To Read

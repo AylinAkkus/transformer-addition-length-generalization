@@ -522,9 +522,6 @@ def gen_train_test(config: Config):
     start_idx = df["operand_1"].astype(str).str.len() + df["operand_2"].astype(str).str.len() + 1
     end_idx = start_idx + df["result"].astype(str).str.len()
     df['target_idx'] = list(zip(start_idx, end_idx))
-    # Write the data to a file
-    # path = './data/mod113.csv'
-    # df.to_csv(path)
     train_tokens = df[df['is train']]['tokenized'].tolist()
     test_tokens = df[~df['is train']]['tokenized'].tolist()
     train_target_idx = df['target_idx'].values.tolist()

@@ -10,6 +10,8 @@
 - Change folder structure and save the config and dataset for different runs [Aylin]
 - Add the conda environment file [Mert]
 - Add a saving scheduling function (save a lot first 50 epochs and then save less)
+- Add something to upsample lower-digit case (and potentially 3 digit in our case) [Aylin]
+- Train successful model. [BOTH]
 
 # To Read
 
@@ -20,5 +22,8 @@ Right Embeddings)
 - https://arxiv.org/pdf/2305.19466 The Impact of Positional Encoding on Length
 Generalization in Transformers (NoPE paper)
 
+Length Generalization:
+
+- https://arxiv.org/abs/2310.16028 What Algorithms can Transformers Learn? A Study in Length Generalization
 
 

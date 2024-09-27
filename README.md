@@ -22,8 +22,12 @@ Right Embeddings)
 - https://arxiv.org/pdf/2305.19466 The Impact of Positional Encoding on Length
 Generalization in Transformers (NoPE paper)
 
-Length Generalization:
-
+Length Generalization and RASP Papers (should be read in this order imo):
+- https://arxiv.org/pdf/2106.06981 (RASP Thinking Like Transformers)
 - https://arxiv.org/abs/2310.16028 What Algorithms can Transformers Learn? A Study in Length Generalization
+- https://openreview.net/forum?id=FmhPg4UJ9K#discussion (Counting Like Transformers: Compiling Temporal Counting Logic Into Softmax Transformers)
+
+Additional, not super important:
+- https://arxiv.org/pdf/2406.06467 (How Far Can Transformers Reason? The Locality Barrier and Inductive Scratchpad)
 
 

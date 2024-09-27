@@ -33,5 +33,6 @@ Additional, not super important:
 Interpretability: 
 
 - https://arxiv.org/pdf/2406.16778 (Finding Transformer Circuits with Edge Pruning)
+- https://aclanthology.org/2023.acl-long.893.pdf (Analyzing Transformers in Embedding Space)
 
 

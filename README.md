@@ -34,5 +34,6 @@ Interpretability:
 
 - https://arxiv.org/pdf/2406.16778 (Finding Transformer Circuits with Edge Pruning)
 - https://aclanthology.org/2023.acl-long.893.pdf (Analyzing Transformers in Embedding Space)
+- https://arxiv.org/abs/2402.11917 (A Mechanistic Analysis of a Transformer Trained on a Symbolic Multi-Step Reasoning Task)
 
 

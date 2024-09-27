@@ -30,4 +30,8 @@ Length Generalization and RASP Papers (should be read in this order imo):
 Additional, not super important:
 - https://arxiv.org/pdf/2406.06467 (How Far Can Transformers Reason? The Locality Barrier and Inductive Scratchpad)
 
+Interpretability: 
+
+- https://arxiv.org/pdf/2406.16778 (Finding Transformer Circuits with Edge Pruning)
+
 

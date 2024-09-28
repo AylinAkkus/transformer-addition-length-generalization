@@ -10,6 +10,8 @@
 - Change folder structure and save the config and dataset for different runs [Aylin]
 - Add the conda environment file [Mert]
 - Add a saving scheduling function (save a lot first 50 epochs and then save less)
+- Add something to upsample lower-digit case (and potentially 3 digit in our case) [Aylin]
+- Train successful model. [BOTH]
 
 # To Read
 
@@ -20,5 +22,18 @@ Right Embeddings)
 - https://arxiv.org/pdf/2305.19466 The Impact of Positional Encoding on Length
 Generalization in Transformers (NoPE paper)
 
+Length Generalization and RASP Papers (should be read in this order imo):
+- https://arxiv.org/pdf/2106.06981 (RASP Thinking Like Transformers)
+- https://arxiv.org/abs/2310.16028 What Algorithms can Transformers Learn? A Study in Length Generalization
+- https://openreview.net/forum?id=FmhPg4UJ9K#discussion (Counting Like Transformers: Compiling Temporal Counting Logic Into Softmax Transformers)
+
+Additional, not super important:
+- https://arxiv.org/pdf/2406.06467 (How Far Can Transformers Reason? The Locality Barrier and Inductive Scratchpad)
+
+Interpretability: 
+
+- https://arxiv.org/pdf/2406.16778 (Finding Transformer Circuits with Edge Pruning)
+- https://aclanthology.org/2023.acl-long.893.pdf (Analyzing Transformers in Embedding Space)
+- https://arxiv.org/abs/2402.11917 (A Mechanistic Analysis of a Transformer Trained on a Symbolic Multi-Step Reasoning Task)
 
 

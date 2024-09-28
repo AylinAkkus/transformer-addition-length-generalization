@@ -119,8 +119,11 @@ class Config():
         pass
 
     def is_it_time_to_save(self, epoch):
-        # TODO: Aylin
-        return (epoch % self.save_every == 0)
+        """Save every 10 epochs for the first 1000 epochs, then less frequently"""
+        if epoch < 1000:
+            return (epoch % 10 == 0)
+        else:
+            return (epoch % self.save_every == 0)
 
     def is_it_time_to_take_metrics(self, epoch):
         return epoch % self.take_metrics_every_n_epochs == 0

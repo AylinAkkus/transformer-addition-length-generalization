@@ -37,7 +37,7 @@ class Config():
     d_model: int = 128 #@param
     fn_name: str = 'add' #@param ['add', 'subtract', 'x2xyy2','rand']
     frac_train: float = 0.1 #@param
-    num_epochs: int = 20000 #@param
+    num_epochs: int = 2000 #@param
     save_models: bool = True #@param
     save_every: int = 50 #@param
 
@@ -70,6 +70,7 @@ class Config():
     num_layers: int = 1
     batch_style: str = 'full'
     d_vocab: int = len(token_to_tokenid)
+    num_digits: int = 3
     n_ctx: int = 12
     d_mlp: int = 4*d_model
     num_heads: int = 4
@@ -121,7 +122,7 @@ class Config():
     def is_it_time_to_save(self, epoch):
         """Save every 10 epochs for the first 1000 epochs, then less frequently"""
         if epoch < 1000:
-            return (epoch % 10 == 0)
+            return (epoch % 5 == 0)
         else:
             return (epoch % self.save_every == 0)
 
@@ -476,7 +477,7 @@ def calculate_coefficients(logits, fourier_basis, key_freqs, p, device):
 import dataclasses
 from collections import defaultdict
 
-def gen_train_test(config: Config):
+def gen_train_test(config: Config, fixed_digit = False):
     tokenizer = Tokenizer(config)
     '''Generate a dataframe with:
     - operand_1, operand_2, result
@@ -485,51 +486,105 @@ def gen_train_test(config: Config):
     - a bool indicating whether the sequence is in the training set
     '''
     num_to_generate = config.p
-    pairs = [(i,j,(i+j)%num_to_generate) for i in range(num_to_generate) for j in range(num_to_generate)]
-    df = pd.DataFrame(pairs, columns=['operand_1', 'operand_2', 'result'])
 
-    # Generate the train-test split
+    # Upsample the pairs with both operands being single digits
+    upsample_frac = 0.8
+    pairs_1 = [(i,j,(i+j)%num_to_generate) for i in range(10) for j in range(10)]
+    df_1 = pd.DataFrame(pairs_1, columns=['operand_1', 'operand_2', 'result'])
     random.seed(config.seed)
-    num_train = int(config.frac_train * len(pairs))
-    num_test = len(pairs) - num_train
+    num_train = int(upsample_frac * len(pairs_1))
+    num_test = len(pairs_1) - num_train
     train_idx = np.array([True]*num_train + [False]*num_test)
     random.shuffle(train_idx)
-    df['is train'] = train_idx
+    df_1['is_train'] = train_idx
 
-    # Add PAD tokens at beginning and EOS at the end
-    final_pairs = []
+    pairs_2 = [(i,j,(i+j)%num_to_generate) for i in range(10) for j in range(10, 100)]
+    pairs_2 += [(i,j,(i+j)%num_to_generate) for i in range(10, 100) for j in range(10)]
+    pairs_2 += [(i,j,(i+j)%num_to_generate) for i in range(10, 100) for j in range(10, 100)]
+    df_2 = pd.DataFrame(pairs_2, columns=['operand_1', 'operand_2', 'result'])
+    random.seed(config.seed)
+    num_train = int(config.frac_train * len(pairs_2))
+    num_test = len(pairs_2) - num_train
+    train_idx = np.array([True]*num_train + [False]*num_test)
+    random.shuffle(train_idx)
+    df_2['is_train'] = train_idx
 
-    for i, pair in enumerate(pairs):
-        target_length = len(str(config.p)) * 3 + 3 # worst case for mod113: 112+110=109EOS"
+    df = pd.concat([df_1, df_2])
 
-        pair_as_str = f"{pair[0]}+{pair[1]}={pair[2]}"
-        current_length = len(pair_as_str)
-        question_length = len(f"{pair[0]}+{pair[1]}")
-        result_length = len(f"={pair[2]}")
- 
-        if current_length < target_length:
-            pad_length = target_length - (current_length+1)
-        else: 
-            pad_length = 0
+    # Parse the data into input strings and store in the dataframe
+    if fixed_digit:
+        df["input_str"] = df.apply(lambda row: to_fixed_digit_format(row), axis=1)
+    else:
+        df["input_str"] = df.apply(lambda row: to_variable_digit_format(row), axis=1)
 
+    # Add the tokenized version which is fed into the LLM
+    df["tokenized"] = df["input_str"].apply(lambda x: tokenizer.tokenize(x))
 
-        pair_as_tokenids = tokenizer.tokenize(pair_as_str)
-        pair_as_tokenids_padded =  pair_as_tokenids + [config.token_to_tokenid['EOS']] 
-        # we add 1 to pad_length because we will slice to make it the target
-        pair_as_tokenids_padded += (pad_length + 1) * [config.token_to_tokenid['PAD']]
+    # Calculate the start and end index of the result in the input string
+    df["start_idx"] = df.apply(lambda row: start_index(row), axis=1)
+    df["end_idx"] = df.apply(lambda row: end_index(row), axis=1)
 
-        assert len(pair_as_tokenids_padded) == int(target_length) + 1
-        final_pairs.append(pair_as_tokenids_padded)
+    # Write to file
+    # with open('data.csv', 'w') as f:
+    #    df.to_csv(f)
 
-    df['tokenized'] = final_pairs
-    start_idx = df["operand_1"].astype(str).str.len() + df["operand_2"].astype(str).str.len() + 1
-    end_idx = start_idx + df["result"].astype(str).str.len()
-    df['target_idx'] = list(zip(start_idx, end_idx))
-    train_tokens = df[df['is train']]['tokenized'].tolist()
-    test_tokens = df[~df['is train']]['tokenized'].tolist()
-    train_target_idx = df['target_idx'].values.tolist()
-    test_target_idx = df['target_idx'].values.tolist()
-    return df, train_tokens, test_tokens, train_target_idx, test_target_idx, 
+    return df
+
+def to_fixed_digit_format(row):
+    """
+    A function that parses the input string into the fixed digit format:
+    "0 0 1 + 0 8 9 = 0 9 0 EOS PAD" 
+    """
+    tokenizer = Tokenizer(config)
+    num_digits = config.num_digits
+    # Pad the operands and result with zeros
+    operand_1 = str(row['operand_1']).zfill(num_digits)
+    operand_2 = row['operand_2'] = str(row['operand_2']).zfill(num_digits)
+    result = row['result'] = str(row['result']).zfill(num_digits)
+
+    # Create the tokenized string
+    input_str = f"{operand_1}+{operand_2}={result}EOS"
+
+    # Pad the tokenized string
+    if len(tokenizer.tokenize(input_str)) < (config.n_ctx +1):
+        input_str += 'PAD'*((config.n_ctx+1) - len(tokenizer.tokenize(input_str)))
+
+    return input_str
+
+def to_variable_digit_format(row):
+    """
+    A function that parses the input string into the variable digit format:
+    "1 + 1 2 = 13 EOS PAD PAD PAD PAD PAD"
+    """
+    tokenizer = Tokenizer(config)
+    operand_1 = str(row['operand_1'])
+    operand_2 = str(row['operand_2'])
+    result = row['result'] = str(row['result'])
+
+    # Create the tokenized string
+    input_str = f"{operand_1}+{operand_2}={result}EOS"
+
+    # Pad the tokenized string
+    if len(tokenizer.tokenize(input_str)) < (config.n_ctx +1):
+        input_str += 'PAD'*((config.n_ctx+1) - len(tokenizer.tokenize(input_str)))
+    return input_str
+
+def start_index(row):
+    """
+    A function that calculates the start index of the result in the input string.
+    """
+    tokenizer = Tokenizer(config)
+    idx = row["tokenized"].index(tokenizer.tokenize("=")[0])
+    return idx
+
+def end_index(row):
+    """
+    A function that calculates the end index of the result in the input string.
+    """
+    tokenizer = Tokenizer(config)
+    idx = row["tokenized"].index(tokenizer.tokenize("EOS")[0])
+    return idx
+
 
 def filter_data(data, train, operand_1_len=None, operand_2_len=None, res_len=None):
     """
@@ -553,19 +608,17 @@ def filter_data(data, train, operand_1_len=None, operand_2_len=None, res_len=Non
         return data[~data["is train"]]
 
 # TODO what type for model?
-def full_loss(config : Config, model: Transformer, data, idx):
+def full_loss(config : Config, model: Transformer, data):
     '''Takes the cross entropy loss of the model on the data'''
-    # TODO: Implement decoding loss
-    # delete last element of each sequence in batch
-    fwd_data = [d[:-1] for d in data]
+    fwd_data = [d[:-1] for d in data["tokenized"]]
     logits = model(fwd_data)
     cross_entropy_per_seq_losses = []
 
-    for i, dat in enumerate(data):
-        start_idx = int(idx[i][0])
-        stop_idx = int(idx[i][1])
-        relevant_logits = logits[i][start_idx:stop_idx+1]
-        targets = t.tensor(data[i][start_idx+1:stop_idx+2], dtype=t.long).to(config.device)
+    for i, dat in data.iterrows():
+        start_idx = dat["start_idx"]
+        end_idx = dat["end_idx"]
+        relevant_logits = logits[i][start_idx:end_idx+1]
+        targets = t.tensor(dat["tokenized"][start_idx+1:end_idx+2], dtype=t.long).to(config.device)
         if not all(0 <= label < config.d_vocab for label in targets):
             raise ValueError(f"Invalid label found in sequence {i}: {targets}")
 
@@ -607,7 +660,9 @@ class Trainer:
 
         self.scheduler = optim.lr_scheduler.LambdaLR(self.optimizer, lr_lambda) # TODO make this a config option
         self.run_name = f"mod_digit_add_{datetime.now().strftime('%Y-%m-%d_%H-%M')}"
-        self.data, self.train, self.test, self.train_target_idx, self.test_target_idx = gen_train_test(config = config)
+        self.data = gen_train_test(config = config)
+        self.train = self.data[self.data['is_train']].reset_index(drop=True)
+        self.test = self.data[~self.data['is_train']].reset_index(drop=True)
         self.metrics_dictionary = defaultdict(dict) # so we can safely call 'update' on keys
         print('training length = ', len(self.train))
         print('testing length = ', len(self.test))
@@ -634,9 +689,9 @@ class Trainer:
     def do_a_training_step(self, epoch: int):
         '''returns train_loss, test_loss'''
         self.model.train()
-        train_loss = full_loss(config = self.config, model = self.model, data = self.train, idx=self.train_target_idx)
+        train_loss = full_loss(config = self.config, model = self.model, data = self.train)
         self.model.eval()
-        test_loss = full_loss(config = self.config, model = self.model, data = self.test, idx=self.test_target_idx)
+        test_loss = full_loss(config = self.config, model = self.model, data = self.test)
         self.train_losses.append(train_loss.item())
         self.test_losses.append(test_loss.item())
         if epoch % 1 == 0:

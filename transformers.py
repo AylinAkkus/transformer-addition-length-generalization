@@ -3,7 +3,7 @@
 # %% auto 0
 __all__ = ['Config', 'HookPoint', 'Embed', 'Unembed', 'PosEmbed', 'LayerNorm', 'Attention', 'MLP', 'TransformerBlock',
            'Transformer', 'make_fourier_basis', 'calculate_key_freqs', 'get_components_of_trig_loss',
-           'calculate_excluded_loss', 'calculate_trig_loss', 'calculate_coefficients', 'Tokenizer', 'gen_train_test', 'full_loss',
+           'calculate_excluded_loss', 'calculate_trig_loss', 'calculate_coefficients', 'Tokenizer', 'gen_train_test', 'loss',
            'Trainer', 'train_model']
 
 # %% ../transformer.ipynb 3
@@ -21,6 +21,7 @@ from dataclasses import dataclass
 import os
 import wandb
 from datetime import datetime
+from torch.utils.data import Dataset, DataLoader
 import re
 import pandas as pd
 import json
@@ -28,11 +29,28 @@ import json
 # %% ../transformer.ipynb 4
 # TODO does dataclass really require type annotations lol
 
+class TokenizedDataset(Dataset):
+    """
+    Converts the entire data (pandas data frame) into a PyTorch Dataset
+    """
+    def __init__(self, data, train = True):
+        # Select train/test
+        filtered_data = data[data["is_train"] == train]
+        list_of_lists = filtered_data["tokenized"].values.tolist()
+        self.tokenized_data = t.tensor(list_of_lists, dtype=t.long)
+
+    def __len__(self):
+        return self.tokenized_data.shape[0]
+
+    def __getitem__(self, idx):
+        return self.tokenized_data[idx]
+    
 
 @dataclass(frozen = True)
 class Config():
     lr: float = 3e-3 #@param
     weight_decay: float = 1.0 #@param
+    batch_size: int = 64 #@param
     p: int = 113 #@param
     d_model: int = 128 #@param
     fn_name: str = 'add' #@param ['add', 'subtract', 'x2xyy2','rand']
@@ -608,17 +626,21 @@ def filter_data(data, train, operand_1_len=None, operand_2_len=None, res_len=Non
         return data[~data["is train"]]
 
 # TODO what type for model?
-def full_loss(config : Config, model: Transformer, data):
+def loss(config : Config, model: Transformer, data):
+    # We need this to extract the position of the result in the input string
+    tokenizer = Tokenizer(config)
+    start_tokenid = tokenizer.tokenize("=")[0]
+    end_tokenid = tokenizer.tokenize("EOS")[0]
     '''Takes the cross entropy loss of the model on the data'''
-    fwd_data = [d[:-1] for d in data["tokenized"]]
+    fwd_data = data[:,:-1]
     logits = model(fwd_data)
     cross_entropy_per_seq_losses = []
 
-    for i, dat in data.iterrows():
-        start_idx = dat["start_idx"]
-        end_idx = dat["end_idx"]
+    for i, row in enumerate(data):
+        start_idx = t.nonzero(row == start_tokenid).item()
+        end_idx = t.nonzero(row == end_tokenid).item()
         relevant_logits = logits[i][start_idx:end_idx+1]
-        targets = t.tensor(dat["tokenized"][start_idx+1:end_idx+2], dtype=t.long).to(config.device)
+        targets = row[start_idx+1:end_idx+2].to(config.device)
         if not all(0 <= label < config.d_vocab for label in targets):
             raise ValueError(f"Invalid label found in sequence {i}: {targets}")
 
@@ -661,8 +683,10 @@ class Trainer:
         self.scheduler = optim.lr_scheduler.LambdaLR(self.optimizer, lr_lambda) # TODO make this a config option
         self.run_name = f"mod_digit_add_{datetime.now().strftime('%Y-%m-%d_%H-%M')}"
         self.data = gen_train_test(config = config)
-        self.train = self.data[self.data['is_train']].reset_index(drop=True)
-        self.test = self.data[~self.data['is_train']].reset_index(drop=True)
+        self.train = TokenizedDataset(self.data, train=True)
+        print("Success")
+        self.test = TokenizedDataset(self.data, train=False)
+        print("Success")
         self.metrics_dictionary = defaultdict(dict) # so we can safely call 'update' on keys
         print('training length = ', len(self.train))
         print('testing length = ', len(self.test))
@@ -688,21 +712,36 @@ class Trainer:
 
     def do_a_training_step(self, epoch: int):
         '''returns train_loss, test_loss'''
+        dataloader_train = DataLoader(self.train, batch_size = self.config.batch_size, shuffle = True)
         self.model.train()
-        train_loss = full_loss(config = self.config, model = self.model, data = self.train)
+
+        # Train the model for one epoch using mini-batches
+        epoch_loss = []
+        for batch in dataloader_train:
+            self.optimizer.zero_grad()
+            train_loss = loss(config = self.config, model = self.model, data = batch)
+            train_loss.backward()
+            self.optimizer.step()
+            epoch_loss.append(train_loss.item())
+        self.scheduler.step()
+
+        # Test the model on entire test set
+        # We need to use this weird construction because want the test data to be in the same format as the training data
+        dataloader_test = DataLoader(self.test, batch_size = len(self.test), shuffle = False)
         self.model.eval()
-        test_loss = full_loss(config = self.config, model = self.model, data = self.test)
-        self.train_losses.append(train_loss.item())
+        for batch in dataloader_test:
+            test_loss = loss(config = self.config, model = self.model, data = self.test)
+
+        # Log the train and test losses
+        train_loss = t.tensor(epoch_loss).mean() # we mean the train loss over the epoch
+        self.train_losses.append(train_loss)
         self.test_losses.append(test_loss.item())
+
+        # Print the train and test losses
         if epoch % 1 == 0:
             # TODO is this ok? this was np.log, and it was barking at me ; i think np.log was being interpreted as a logging module
             print(f'Epoch {epoch}, train loss {t.log(train_loss).item():.4f}, test loss {t.log(test_loss).item():.4f}')
-        train_loss.backward()
-        self.optimizer.step()
-        # print the learning rate
-        # print("Learning rate: ", self.scheduler.get_last_lr())
-        self.scheduler.step()
-        self.optimizer.zero_grad()
+
         return train_loss, test_loss
 
     def initial_save_if_appropriate(self):

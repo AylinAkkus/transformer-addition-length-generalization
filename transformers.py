@@ -48,16 +48,17 @@ class TokenizedDataset(Dataset):
 
 @dataclass(frozen = True)
 class Config():
-    lr: float = 3e-3 #@param
+    lr: float = 1e-3 #@param
     weight_decay: float = 1.0 #@param
     batch_size: int = 64 #@param
     p: int = 113 #@param
     d_model: int = 128 #@param
     fn_name: str = 'add' #@param ['add', 'subtract', 'x2xyy2','rand']
-    frac_train: float = 0.1 #@param
-    num_epochs: int = 2000 #@param
+    frac_train: float = 0.4 #@param
+    num_epochs: int = 5000 #@param
     save_models: bool = True #@param
     save_every: int = 50 #@param
+    fixed_digit: bool = False #@param
 
     # TODO for the first 1000 steps, save every 10 because 'interesting stuff happens at the start'
     # TODO add a helper function to generate indices here
@@ -495,8 +496,10 @@ def calculate_coefficients(logits, fourier_basis, key_freqs, p, device):
 import dataclasses
 from collections import defaultdict
 
-def gen_train_test(config: Config, fixed_digit = False):
+def gen_train_test(config: Config):
+
     tokenizer = Tokenizer(config)
+    fixed_digit = config.fixed_digit
     '''Generate a dataframe with:
     - operand_1, operand_2, result
     - input string of form: "operator_1+operator_2=resultEOSPADPAD"
@@ -673,12 +676,7 @@ class Trainer:
             if step <= n_warmup:
                 return min(step / n_warmup, 1)  # Linear warm-up
             else:
-                # Linear decay from the end of the warm-up to 1/10 of the original LR
-                decay_factor = 0.03  # Final LR will be 1/10 of the original LR
-                total_decay_steps = num_epochs - n_warmup
-                step_after_warmup = step - n_warmup
-                decay = 1 - (1 - decay_factor) * (step_after_warmup / total_decay_steps)
-                return max(decay, decay_factor)  # Ensures LR never goes below 1/10
+                return 1
 
         self.scheduler = optim.lr_scheduler.LambdaLR(self.optimizer, lr_lambda) # TODO make this a config option
         self.run_name = f"mod_digit_add_{datetime.now().strftime('%Y-%m-%d_%H-%M')}"

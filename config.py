@@ -10,7 +10,7 @@ import json
 
 @dataclasses.dataclass
 class Config():
-    lr: float = 3e-3 #@param
+    lr: float = 2e-3 #@param
     weight_decay: float = 1.0 #@param
     batch_size: int = 256 #@param
     p: int = 113 #@param
@@ -20,10 +20,8 @@ class Config():
     num_epochs: int = 2000 #@param
     save_models: bool = True #@param
     save_every: int = 5 #@param
-    fixed_digit: bool = False #@param
-
-    # TODO for the first 1000 steps, save every 10 because 'interesting stuff happens at the start'
-    # TODO add a helper function to generate indices here
+    fixed_digit: bool = True #@param
+    n_warmup: int = 10 #@param
 
     # Stop training when test loss is <stopping_thresh
     stopping_thresh: int = -1 #@param

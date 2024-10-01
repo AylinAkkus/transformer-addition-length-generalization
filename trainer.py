@@ -45,8 +45,7 @@ class Trainer:
         self.model.to(config.device)
         self.optimizer = optim.AdamW(self.model.parameters(), lr = config.lr, weight_decay=config.weight_decay, betas=(0.9, 0.98))
 
-        def lr_lambda(step, num_epochs=config.num_epochs):
-            n_warmup = 10
+        def lr_lambda(step, num_epochs=config.num_epochs, n_warmup = config.n_warmup):
             if step <= n_warmup:
                 return min(step / n_warmup, 1)  # Linear warm-up
             elif step >= num_epochs * 0.75:
@@ -60,9 +59,8 @@ class Trainer:
         self.run_name = f"mod_digit_add_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}"
         self.data = gen_train_test(config = config)
         self.train = TokenizedDataset(self.data, train=True)
-        print("Success")
         self.test = TokenizedDataset(self.data, train=False)
-        print("Success")
+
         self.metrics_dictionary = defaultdict(dict) # so we can safely call 'update' on keys
         print('training length = ', len(self.train))
         print('testing length = ', len(self.test))
@@ -114,9 +112,10 @@ class Trainer:
         self.test_losses.append(test_loss.item())
 
         # Print the train and test losses
-        if epoch % 1 == 0:
-            # TODO is this ok? this was np.log, and it was barking at me ; i think np.log was being interpreted as a logging module
+        if epoch <= 2*self.config.n_warmup:
             print(f'Epoch {epoch}, train loss {t.log(train_loss).item():.4f}, test loss {t.log(test_loss).item():.4f}')
+        elif epoch % 10 == 0:
+            print(f'Epoch {epoch}, train loss {train_loss.item():.4f}, test loss {test_loss.item():.4f}')
 
         return train_loss, test_loss
 
@@ -133,7 +132,7 @@ class Trainer:
             
             # Save the config
             config_json = self.config.serialize()
-            with open(f"{root}/{self.run_name}/'config.json", 'w') as f:
+            with open(f"{root}/{self.run_name}/config.json", 'w') as f:
                 f.write(config_json)
 
             # Save entire data as csv
@@ -216,7 +215,7 @@ def train_model(config: Config):
     for epoch in range(config.num_epochs):
         t0 = time.time()
         train_loss, test_loss = world.do_a_training_step(epoch)
-        print(f"Epoch {epoch} took {time.time() - t0:.2f} seconds")
+        #print(f"Epoch {epoch} took {time.time() - t0:.2f} seconds")
         if test_loss.item() < config.stopping_thresh:
             break
         if config.is_it_time_to_save(epoch = epoch):

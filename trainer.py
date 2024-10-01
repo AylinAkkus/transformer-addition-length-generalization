@@ -72,10 +72,10 @@ class Trainer:
         }
         if save_to_wandb:
             wandb.log(save_dict)
-            print("Saved epoch to wandb")
+            #print("Saved epoch to wandb")
         if self.config.save_models: 
             t.save(save_dict, root/self.run_name/f"{epoch}.pth")
-            print(f"Saved model to {root/self.run_name/f'{epoch}.pth'}")
+            #print(f"Saved model to {root/self.run_name/f'{epoch}.pth'}")
         self.metrics_dictionary[epoch].update(save_dict)
 
     def do_a_training_step(self, epoch: int):
@@ -109,7 +109,7 @@ class Trainer:
         if epoch <= 2*self.config.n_warmup:
             print(f'Epoch {epoch}, train loss {t.log(train_loss).item():.4f}, test loss {t.log(test_loss).item():.4f}')
         elif epoch % 10 == 0:
-            print(f'Epoch {epoch}, train loss {train_loss.item():.4f}, test loss {test_loss.item():.4f}')
+            print(f'Epoch {epoch}, train loss {t.log(train_loss).item():.4f}, test loss {t.log(test_loss).item():.4f}')
 
         return train_loss, test_loss
 

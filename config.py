@@ -10,14 +10,14 @@ import json
 
 @dataclasses.dataclass
 class Config():
-    lr: float = 2e-3 #@param
+    lr: float = 1e-3 #@param
     weight_decay: float = 1.0 #@param
     batch_size: int = 256 #@param
     p: int = 113 #@param
     d_model: int = 128 #@param
     fn_name: str = 'add' #@param ['add', 'subtract', 'x2xyy2','rand']
-    frac_train: float = 0.4 #@param
-    num_epochs: int = 2000 #@param
+    frac_train: float = 0.2 #@param
+    num_epochs: int = 3000 #@param
     save_models: bool = True #@param
     save_every: int = 5 #@param
     fixed_digit: bool = True #@param
@@ -60,6 +60,11 @@ class Config():
     device: t.device = t.device("cuda") if t.cuda.is_available() else t.device("cpu")
     print(f"Using device: {device}")
     print(f"fixed_digit: {fixed_digit}")
+    print(f"Training for {num_epochs} epochs")
+    print(f"Batch size: {batch_size}")
+    print(f"Learning rate: {lr}")
+    print(f"Train on {frac_train} of the data")
+    print(f"Saving model every {save_every} epochs")
 
     # TODO ankify the privileged basis concept- a priori vs etc. ; consider writing up an explanation of privileged basis
 

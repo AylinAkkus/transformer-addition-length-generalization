@@ -12,6 +12,7 @@
 - Add SGD [Done by Aylin]
 - Modularize all code [Done by Aylin]
 - Create a Jupyter Notebook that takes a file name on the top and runs all the analysis [Aylin]
+- Add a functionality to train from checkpoint (side quest, would save us if training is interrupted somehow).
 - Train successful model. [BOTH]
 - Vary positional encodings (current implementations learns the positional encodings)
 

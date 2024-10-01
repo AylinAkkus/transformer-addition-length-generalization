@@ -13,14 +13,14 @@ class Config():
     lr: float = 1e-3 #@param
     weight_decay: float = 1.0 #@param
     batch_size: int = 256 #@param
-    p: int = 113 #@param
+    p: int = 100 #@param
     d_model: int = 128 #@param
     fn_name: str = 'add' #@param ['add', 'subtract', 'x2xyy2','rand']
-    frac_train: float = 0.2 #@param
+    frac_train: float = 0.3 #@param
     num_epochs: int = 3000 #@param
     save_models: bool = True #@param
     save_every: int = 5 #@param
-    fixed_digit: bool = True #@param
+    fixed_digit: bool = False #@param
     n_warmup: int = 10 #@param
 
     # Stop training when test loss is <stopping_thresh

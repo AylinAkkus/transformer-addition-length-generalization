@@ -37,7 +37,7 @@ def gen_train_test(config: Config, fixed_digit = False):
 
     # Upsample the pairs with both operands being single digits
     upsample_frac = 0.8
-    pairs_1 = [(i,j,(i+j)%num_to_generate) for i in range(10) for j in range(10)]
+    pairs_1 = [(i,j,(i+j)) for i in range(10) for j in range(10)]
     df_1 = pd.DataFrame(pairs_1, columns=['operand_1', 'operand_2', 'result'])
     random.seed(config.seed)
     num_train = int(upsample_frac * len(pairs_1))
@@ -46,9 +46,9 @@ def gen_train_test(config: Config, fixed_digit = False):
     random.shuffle(train_idx)
     df_1['is_train'] = train_idx
 
-    pairs_2 = [(i,j,(i+j)%num_to_generate) for i in range(10) for j in range(10, 100)]
-    pairs_2 += [(i,j,(i+j)%num_to_generate) for i in range(10, 100) for j in range(10)]
-    pairs_2 += [(i,j,(i+j)%num_to_generate) for i in range(10, 100) for j in range(10, 100)]
+    pairs_2 = [(i,j,(i+j)) for i in range(10) for j in range(10, 100)]
+    pairs_2 += [(i,j,(i+j)) for i in range(10, 100) for j in range(10)]
+    pairs_2 += [(i,j,(i+j)) for i in range(10, 100) for j in range(10, 100)]
     df_2 = pd.DataFrame(pairs_2, columns=['operand_1', 'operand_2', 'result'])
     random.seed(config.seed)
     num_train = int(config.frac_train * len(pairs_2))

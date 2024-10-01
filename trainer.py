@@ -2,14 +2,10 @@ __all__ = ['Trainer', 'train_model']
 
 
 from collections import defaultdict
-import numpy as np
 import torch as t
-import torch.nn as nn
 import torch.optim as optim
 import time
 import torch.nn.functional as F
-import einops
-import random 
 import helpers
 from helpers import *
 from dataclasses import asdict
@@ -17,9 +13,7 @@ import os
 import wandb
 from datetime import datetime
 from torch.utils.data import Dataset, DataLoader
-import re
 import pandas as pd
-import json
 from config import *
 from dataset import *
 from model import *
@@ -162,6 +156,7 @@ class Trainer:
 
 
     def take_metrics(self, train, epoch):
+        """
         with t.inference_mode():
             def sum_sq_weights():
                 # TODO refactor- taken from app code
@@ -206,6 +201,48 @@ class Trainer:
             wandb.log(metrics)
             print("Logged metrics to wandb")
             self.metrics_dictionary[epoch].update(metrics)
+        """
+        # We use the df instead of the dataset class for this
+        # because our generate greedy function is not batched
+        train = self.data[self.data["is_train"]==True]
+        test = self.data[self.data["is_train"]==False]
+
+        # Max number of digits in the dataset
+        max_digits = len(str(config.p))
+        metrics = {}
+
+        # Calculate the accuracy (digits and overall) for train and test
+        for data in [train, test]:
+            count = 0
+            correct = 0
+            for i, row in data.iterrows():
+                count += 1
+                print(f"Accuracy: {(correct/count):.2%}, Count: {count}", end = '\r')
+                ground_truth = int(row["result"])
+                try: 
+                    pred = int(self.model.generate_greedy(row["tokenized"])[0])
+                except:
+                    print("Prediction can not be cast into int")
+                    print("input", row["input_str"])
+                    print("Prediction", pred)
+                if self.check_all_digits(pred, ground_truth):
+                    correct += 1
+            if data.equals(train):
+                metrics['train_accuracy'] = correct/count
+            else:
+                metrics['test_accuracy'] = correct/count
+        self.metrics_dictionary[epoch].update(metrics)
+        print(f"Train accuracy: {metrics['train_accuracy']:.2%}, Test accuracy: {metrics['test_accuracy']:.2%}")
+
+    def check_all_digits(self, pred, ground_truth):
+        if ground_truth == pred:
+            return True
+        else:
+            return False
+
+        
+
+      
 
 def train_model(config: Config):
     world = Trainer(config = config)
@@ -222,8 +259,7 @@ def train_model(config: Config):
             # TODO this also used to do a check about test loss- pretty sure not necessary
             world.save_epoch(epoch = epoch)
         if config.is_it_time_to_take_metrics(epoch = epoch):
-            pass
-            #world.take_metrics(epoch = epoch, train = world.train)
+            world.take_metrics(epoch = epoch, train = world.train)
 
     world.post_training_save(save_optimizer_and_scheduler=True)
     helpers.lines([world.train_losses, world.test_losses], labels=['train', 'test'], log_y=True)
@@ -232,4 +268,5 @@ def train_model(config: Config):
 
 if __name__ == '__main__':
     config = Config()
-    train_model(config)
+    trainer = Trainer(config)
+    trainer.take_metrics(train = True, epoch = 0)

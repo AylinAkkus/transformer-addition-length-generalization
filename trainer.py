@@ -72,10 +72,10 @@ class Trainer:
         }
         if save_to_wandb:
             wandb.log(save_dict)
-            #print("Saved epoch to wandb")
+            print("Saved epoch to wandb")
         if self.config.save_models: 
             t.save(save_dict, root/self.run_name/f"{epoch}.pth")
-            #print(f"Saved model to {root/self.run_name/f'{epoch}.pth'}")
+            print(f"Saved model to {root/self.run_name/f'{epoch}.pth'}")
         self.metrics_dictionary[epoch].update(save_dict)
 
     def do_a_training_step(self, epoch: int):
@@ -109,7 +109,7 @@ class Trainer:
         if epoch <= 2*self.config.n_warmup:
             print(f'Epoch {epoch}, train loss {t.log(train_loss).item():.4f}, test loss {t.log(test_loss).item():.4f}')
         elif epoch % 10 == 0:
-            print(f'Epoch {epoch}, train loss {t.log(train_loss).item():.4f}, test loss {t.log(test_loss).item():.4f}')
+            print(f'Epoch {epoch}, train loss {train_loss.item():.4f}, test loss {test_loss.item():.4f}')
 
         return train_loss, test_loss
 
@@ -202,22 +202,59 @@ class Trainer:
             print("Logged metrics to wandb")
             self.metrics_dictionary[epoch].update(metrics)
         """
+        # We store the frequencies for the metrics in this epoch in a dictionary
+        metrics = {}
+
+        def check_all_digits(pred, ground_truth, data):
+            """
+            Updates the frequency for the all_digits metric
+            """
+            if ground_truth == pred:
+                if data.equals(train):
+                    try:
+                        metrics['train_accuracy_total'] += 1
+                    except:
+                        metrics['train_accuracy_total'] = 1
+                else:
+                    try:
+                        metrics['test_accuracy_total'] += 1
+                    except:
+                        metrics['test_accuracy_total'] = 1
+
+        def check_individual_digits(pred, ground_truth, data):
+            """
+            Updates the frequency for the individual digits metric
+            """
+            # Fill shorter number with zeros
+            max_len = max(len(str(pred)), len(str(ground_truth)))
+            pred_str = f"{pred:0{max_len}d}"
+            ground_truth_str = f"{ground_truth:0{max_len}d}"
+            
+            assert len(pred_str) == len(ground_truth_str)
+
+            for i in range(len(pred_str)):
+                if pred_str[-(i+1)] == ground_truth_str[-(i+1)]:
+                    if data.equals(train):
+                        try:
+                            metrics[f'train_accuracy_digit_{i}'] += 1
+                        except:
+                            metrics[f'train_accuracy_digit_{i}'] = 1
+                    else:
+                        try:
+                            metrics[f'test_accuracy_digit_{i}'] += 1
+                        except:
+                            metrics[f'test_accuracy_digit_{i}'] = 1
+
         # We use the df instead of the dataset class for this
         # because our generate greedy function is not batched
         train = self.data[self.data["is_train"]==True]
         test = self.data[self.data["is_train"]==False]
 
-        # Max number of digits in the dataset
-        max_digits = len(str(config.p))
-        metrics = {}
-
         # Calculate the accuracy (digits and overall) for train and test
         for data in [train, test]:
-            count = 0
-            correct = 0
             for i, row in data.iterrows():
-                count += 1
-                print(f"Accuracy: {(correct/count):.2%}, Count: {count}", end = '\r')
+
+                # Get the ground truth and prediction
                 ground_truth = int(row["result"])
                 try: 
                     pred = int(self.model.generate_greedy(row["tokenized"])[0])
@@ -225,21 +262,21 @@ class Trainer:
                     print("Prediction can not be cast into int")
                     print("input", row["input_str"])
                     print("Prediction", pred)
-                if self.check_all_digits(pred, ground_truth):
-                    correct += 1
-            if data.equals(train):
-                metrics['train_accuracy'] = correct/count
-            else:
-                metrics['test_accuracy'] = correct/count
+
+                # Check prediction and ground truth for each digit and overall
+                check_all_digits(pred, ground_truth, data)
+                check_individual_digits(pred, ground_truth, data)
+
+            # Calculate the accuracy from the frequencies
+            for key in metrics.keys():
+                if "train" in key:
+                    metrics[key] = metrics[key] / len(train)
+                else:
+                    metrics[key] = metrics[key] / len(test)
+
+        # Log the metrics dictionary accross all epochs
         self.metrics_dictionary[epoch].update(metrics)
-        print(f"Train accuracy: {metrics['train_accuracy']:.2%}, Test accuracy: {metrics['test_accuracy']:.2%}")
-
-    def check_all_digits(self, pred, ground_truth):
-        if ground_truth == pred:
-            return True
-        else:
-            return False
-
+        print("metrics", metrics)
         
 
       

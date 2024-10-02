@@ -112,7 +112,7 @@ class Trainer:
         if epoch <= 2*self.config.n_warmup:
             print(f'Epoch {epoch}, train loss {t.log(train_loss).item():.4f}, test loss {t.log(test_loss).item():.4f}')
         elif epoch % 10 == 0:
-            print(f'Epoch {epoch}, train loss {train_loss.item():.4f}, test loss {test_loss.item():.4f}')
+            print(f'Epoch {epoch}, train loss {t.log(train_loss).item():.4f}, test loss {t.log(test_loss).item():.4f}')
 
         return train_loss, test_loss
 

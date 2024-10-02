@@ -113,7 +113,8 @@ class Config():
             return (epoch % self.save_every == 0)
 
     def is_it_time_to_take_metrics(self, epoch):
-        return epoch % self.take_metrics_every_n_epochs == 0
+        # for now take metrics whenever we save
+        return self.is_it_time_to_save(epoch)
 
 # TODO make this an assert inside the consturctor
 assert Config.d_model % Config.num_heads == 0

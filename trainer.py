@@ -51,6 +51,9 @@ class Trainer:
 
         self.scheduler = optim.lr_scheduler.LambdaLR(self.optimizer, lr_lambda) # TODO make this a config option
         self.run_name = f"mod_digit_add_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}"
+        if config.save_models:
+            os.makedirs(root/self.run_name, exist_ok=True)
+            os.makedirs(root/self.run_name/'models', exist_ok=True)
         self.data = gen_train_test(config = config)
         self.train = TokenizedDataset(self.data, train=True)
         self.test = TokenizedDataset(self.data, train=False)
@@ -74,8 +77,8 @@ class Trainer:
             wandb.log(save_dict)
             print("Saved epoch to wandb")
         if self.config.save_models: 
-            t.save(save_dict, root/self.run_name/f"{epoch}.pth")
-            print(f"Saved model to {root/self.run_name/f'{epoch}.pth'}")
+            t.save(save_dict, f"{root}/{self.run_name}/models/{epoch}.pth")
+            print(f"Saved model to {root}/{self.run_name}/models/{epoch}.pth")
         self.metrics_dictionary[epoch].update(save_dict)
 
     def do_a_training_step(self, epoch: int):
@@ -118,7 +121,7 @@ class Trainer:
         Save the model, config and entire data at the start of training
         """
         if self.config.save_models:
-            os.mkdir(root/self.run_name)
+            os.makedirs(root/self.run_name, exist_ok=True)
 
             # Save model
             save_dict = {'model': self.model.state_dict()}
@@ -135,7 +138,7 @@ class Trainer:
 
 
     def post_training_save(self, save_optimizer_and_scheduler = True, log_to_wandb = True):
-        if not self.config.save_models:
+        if self.config.save_models:
             os.makedirs(root/self.run_name, exist_ok=True)
         save_dict = {
             'model': self.model.state_dict(),
@@ -276,7 +279,7 @@ class Trainer:
 
         # Log the metrics dictionary accross all epochs
         self.metrics_dictionary[epoch].update(metrics)
-        print("metrics", metrics)
+        #print("metrics", metrics)
         
 
       

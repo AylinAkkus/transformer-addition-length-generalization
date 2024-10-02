@@ -155,7 +155,7 @@ class Trainer:
         self.metrics_dictionary[save_dict['epoch']].update(save_dict)
 
 
-    def take_metrics(self, train, epoch):
+    def take_metrics(self, epoch):
         """
         with t.inference_mode():
             def sum_sq_weights():
@@ -203,23 +203,24 @@ class Trainer:
             self.metrics_dictionary[epoch].update(metrics)
         """
         # We store the frequencies for the metrics in this epoch in a dictionary
-        metrics = {}
+        new_metrics = {}
 
         def check_all_digits(pred, ground_truth, data):
             """
             Updates the frequency for the all_digits metric
             """
+            # Initialize the dictionary entry
+            if data.equals(train) and "train_accuracy_total" not in new_metrics.keys():
+                new_metrics['train_accuracy_total'] = 0
+            elif data.equals(test) and "test_accuracy_total" not in new_metrics.keys():
+                new_metrics['test_accuracy_total'] = 0
+
+            # Update the dictionary entry if the prediction is correct
             if ground_truth == pred:
                 if data.equals(train):
-                    try:
-                        metrics['train_accuracy_total'] += 1
-                    except:
-                        metrics['train_accuracy_total'] = 1
+                    new_metrics['train_accuracy_total'] += 1
                 else:
-                    try:
-                        metrics['test_accuracy_total'] += 1
-                    except:
-                        metrics['test_accuracy_total'] = 1
+                    new_metrics['test_accuracy_total'] += 1
 
         def check_individual_digits(pred, ground_truth, data):
             """
@@ -233,26 +234,37 @@ class Trainer:
             assert len(pred_str) == len(ground_truth_str)
 
             for i in range(len(pred_str)):
+                # Initialize the dictionary entry
+                if data.equals(train) and f"train_accuracy_digit_{i}" not in new_metrics.keys():
+                    new_metrics[f'train_accuracy_digit_{i}'] = 0
+                elif data.equals(test) and f"test_accuracy_digit_{i}" not in new_metrics.keys():
+                    new_metrics[f'test_accuracy_digit_{i}'] = 0
+                
+                # Now update the dictionary entry if the prediction is correct
                 if pred_str[-(i+1)] == ground_truth_str[-(i+1)]:
                     if data.equals(train):
                         try:
-                            metrics[f'train_accuracy_digit_{i}'] += 1
+                            new_metrics[f'train_accuracy_digit_{i}'] += 1
                         except:
-                            metrics[f'train_accuracy_digit_{i}'] = 1
+                            new_metrics[f'train_accuracy_digit_{i}'] = 1
                     else:
                         try:
-                            metrics[f'test_accuracy_digit_{i}'] += 1
+                            new_metrics[f'test_accuracy_digit_{i}'] += 1
                         except:
-                            metrics[f'test_accuracy_digit_{i}'] = 1
+                            new_metrics[f'test_accuracy_digit_{i}'] = 1
 
         # We use the df instead of the dataset class for this
         # because our generate greedy function is not batched
         train = self.data[self.data["is_train"]==True]
         test = self.data[self.data["is_train"]==False]
 
+        # Check that the data is not empty
+        assert len(train) > 0
+        assert len(test) > 0
+
         # Calculate the accuracy (digits and overall) for train and test
         for data in [train, test]:
-            for i, row in data.iterrows():
+            for _, row in data.iterrows():
 
                 # Get the ground truth and prediction
                 ground_truth = int(row["result"])
@@ -267,20 +279,16 @@ class Trainer:
                 check_all_digits(pred, ground_truth, data)
                 check_individual_digits(pred, ground_truth, data)
 
-            # Calculate the accuracy from the frequencies
-            for key in metrics.keys():
-                if "train" in key:
-                    metrics[key] = metrics[key] / len(train)
-                else:
-                    metrics[key] = metrics[key] / len(test)
+        # Calculate the accuracy from the frequencies
+        for key in new_metrics.keys():
+            if "train" in key:
+                new_metrics[key] = new_metrics[key] / len(train)
+            else:
+                new_metrics[key] = new_metrics[key] / len(test)
 
-        # Log the metrics dictionary accross all epochs
-        self.metrics_dictionary[epoch].update(metrics)
-        print("metrics", metrics)
+        # Update the metrics dictionary across all epochs
+        self.metrics_dictionary[epoch].update(new_metrics)
         
-
-      
-
 def train_model(config: Config):
     world = Trainer(config = config)
     print(f'Run name {world.run_name}')
@@ -296,7 +304,7 @@ def train_model(config: Config):
             # TODO this also used to do a check about test loss- pretty sure not necessary
             world.save_epoch(epoch = epoch)
         if config.is_it_time_to_take_metrics(epoch = epoch):
-            world.take_metrics(epoch = epoch, train = world.train)
+            world.take_metrics(epoch = epoch)
 
     world.post_training_save(save_optimizer_and_scheduler=True)
     helpers.lines([world.train_losses, world.test_losses], labels=['train', 'test'], log_y=True)
@@ -306,4 +314,5 @@ def train_model(config: Config):
 if __name__ == '__main__':
     config = Config()
     trainer = Trainer(config)
-    trainer.take_metrics(train = True, epoch = 0)
+
+    trainer.take_metrics(epoch = 0)

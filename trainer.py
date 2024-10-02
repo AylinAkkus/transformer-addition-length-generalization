@@ -290,7 +290,7 @@ class Trainer:
                 new_metrics[key] = new_metrics[key] / len(test)
 
         # Log the metrics dictionary accross all epochs
-        self.metrics_dictionary[epoch].update(metrics)
+        self.metrics_dictionary[epoch].update(new_metrics)
         #print("metrics", metrics)
         
 

@@ -10,6 +10,7 @@ import helpers
 from helpers import *
 from dataclasses import asdict
 import os
+import json
 import wandb
 from datetime import datetime
 from torch.utils.data import Dataset, DataLoader
@@ -79,7 +80,7 @@ class Trainer:
         if self.config.save_models: 
             t.save(save_dict, f"{root}/{self.run_name}/models/{epoch}.pth")
             print(f"Saved model to {root}/{self.run_name}/models/{epoch}.pth")
-        self.metrics_dictionary[epoch].update(save_dict)
+        #self.metrics_dictionary[epoch].update(save_dict)
 
     def do_a_training_step(self, epoch: int):
         '''returns train_loss, test_loss'''
@@ -128,9 +129,9 @@ class Trainer:
             t.save(save_dict, root/self.run_name/'init.pth')
             
             # Save the config
-            config_json = self.config.serialize()
+            config_dict = self.config.serialize()
             with open(f"{root}/{self.run_name}/config.json", 'w') as f:
-                f.write(config_json)
+                json.dump(config_dict, f, indent=4)
 
             # Save entire data as csv
             self.data.to_csv(f"{root}/{self.run_name}/data.csv")
@@ -155,8 +156,10 @@ class Trainer:
             wandb.log(save_dict)
         t.save(save_dict, root/self.run_name/f"final.pth")
         print(f"Saved model to {root/self.run_name/f'final.pth'}")
-        self.metrics_dictionary[save_dict['epoch']].update(save_dict)
-
+        #self.metrics_dictionary[save_dict['epoch']].update(save_dict)
+        # Save the metrics dictionary
+        with open(f"{root}/{self.run_name}/metrics.json", 'w') as f:
+            json.dump(self.metrics_dictionary, f, indent=4)
 
     def take_metrics(self, epoch):
         """
@@ -293,9 +296,6 @@ class Trainer:
         self.metrics_dictionary[epoch].update(new_metrics)
         #print("metrics", metrics)
         
-
-      
-
 def train_model(config: Config):
     world = Trainer(config = config)
     print(f'Run name {world.run_name}')
@@ -321,5 +321,4 @@ def train_model(config: Config):
 if __name__ == '__main__':
     config = Config()
     trainer = Trainer(config)
-
-    trainer.take_metrics(epoch = 0)
+    train_model(config)

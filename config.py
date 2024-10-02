@@ -98,7 +98,7 @@ class Config():
         config_as_dict = dataclasses.asdict(self)
         # Ignore device as it can not be serialized
         del config_as_dict['device']
-        return json.dumps(config_as_dict)
+        return config_as_dict
 
     def is_train_is_test(self, train):
         '''Creates an array of Boolean indices according to whether each data point is in train or test.

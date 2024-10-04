@@ -311,7 +311,9 @@ def train_model(config: Config):
             # TODO this also used to do a check about test loss- pretty sure not necessary
             world.save_epoch(epoch = epoch)
         if config.is_it_time_to_take_metrics(epoch = epoch):
-            world.take_metrics(epoch = epoch)
+            # temporarily turn off take metrics
+            pass
+            #world.take_metrics(epoch = epoch)
 
     world.post_training_save(save_optimizer_and_scheduler=True)
     helpers.lines([world.train_losses, world.test_losses], labels=['train', 'test'], log_y=True)

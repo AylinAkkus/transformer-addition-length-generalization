@@ -4,3 +4,5 @@ large_files/
 __pycache__/
 __pycache__/*.pyc
 data/
+saved_runs/nandaruns/
+saved_runs/**/models

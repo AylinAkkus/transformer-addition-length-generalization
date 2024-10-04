@@ -16,7 +16,7 @@ class Config():
     p: int = 100 #@param
     d_model: int = 128 #@param
     fn_name: str = 'add' #@param ['add', 'subtract', 'x2xyy2','rand']
-    frac_train: float = 0.3 #@param
+    frac_train: float = 0.5 #@param
     num_epochs: int = 3000 #@param
     save_models: bool = True #@param
     save_every: int = 5 #@param

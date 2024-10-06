@@ -648,7 +648,7 @@ def get_frequencies(data, model, tokenizer):
 
     return frequencies
 
-def take_metrics(model_path):
+def take_metrics(model_path, dir_path):
 
     # Model and tokenizer
     device = t.device("cuda" if t.cuda.is_available() else "cpu")
@@ -660,7 +660,7 @@ def take_metrics(model_path):
     tokenizer = Tokenizer(config)
 
     # We evaluate directly on the data df saved in the same directory as the model
-    data_path = "saved_runs/variable_digit_add_50/data.csv"
+    data_path = os.path.join(dir_path, "data.csv")
     data = pd.read_csv(data_path)
 
     # Get counts
@@ -679,15 +679,14 @@ def take_metrics(model_path):
     # print("metrics", metrics)
 
     # Save the metrics to a json file
-    save_metrics(metrics, model_path)
+    save_metrics(metrics, model_path, dir_path)
 
-def save_metrics(metrics_dict, model_path):
+def save_metrics(metrics_dict, model_path, dir_path):
     """
     Function which saves the metrics of a model to a json file
     called "metrics.json" in the same directory as the model
     """
-    # Extract the directory and model name
-    dir_path = os.path.dirname(model_path)
+    # Extract
     model_name = os.path.basename(model_path)
 
     # Save the metrics to metric.json

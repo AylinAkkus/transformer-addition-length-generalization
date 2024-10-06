@@ -66,6 +66,14 @@ class Trainer:
         self.test_losses = []
         self.config = config
 
+        print(f"Using device: {config.device}")
+        print(f"fixed_digit: {config.fixed_digit}")
+        print(f"Training for {config.num_epochs} epochs")
+        print(f"Batch size: {config.batch_size}")
+        print(f"Learning rate: {config.lr}")
+        print(f"Train on {config.frac_train} of the data")
+        print(f"Saving model every {config.save_every} epochs")
+
     def save_epoch(self, epoch, save_to_wandb = True):
         ''' precondition! train loss and test losses have been appended to '''
         save_dict = {

@@ -6,7 +6,7 @@ __all__ = ['use_drive', 'root', 'imshow', 'imshow_div', 'run_shell_command_as_py
            'normalize', 'extract_freq_2d', 'get_cov', 'is_close', 'cpu_aware_load_at_root',
            'load_mod_addition_frac_train_sweep', 'load_5_digit_addition_infinite', 'load_5_digit_addition_finite',
            'load_induction_head_finite', 'load_induction_head_infinite', 'load_infinite_data_losses',
-           'load_finite_data_losses', 'load_no_wd_width_scan']
+           'load_finite_data_losses', 'load_no_wd_width_scan', 'take_metrics', 'extract_answer_from_prediction']
 
 # %% ../ipynb 2
 def run_shell_command_as_python(shell):
@@ -117,6 +117,7 @@ def fft2d(mat, p, fourier_basis):
     fourier_mat = torch.einsum('xyz,fx,Fy->fFz', mat, fourier_basis, fourier_basis)
     return fourier_mat.reshape(shape)
 
+"""
 def analyse_fourier_2d(p, tensor, top_k=10):
     # Processes a (p,p) or (p*p) tensor in the 2D Fourier Basis, showing the 
     # top_k terms and how large a fraction of the variance they explain
@@ -130,6 +131,7 @@ def analyse_fourier_2d(p, tensor, top_k=10):
                      fourier_basis_names[indices[i].item()//p], 
                      fourier_basis_names[indices[i]%p]])
     display(pd.DataFrame(rows, columns=['Coefficient', 'Frac explained', 'Cumulative frac explained', 'x', 'y']))
+"""
 
 def get_2d_fourier_component(tensor, x, y, fourier_basis):
     # Takes in a batch x ... tensor and projects it onto the 2D Fourier Component 
@@ -534,4 +536,174 @@ def loss(config : Config, model: Transformer, data):
     loss = t.stack(cross_entropy_per_seq_losses).mean()
 
     return loss
+    
+def extract_answer_from_prediction(pred, tokenizer):
+    """
+    Takes the prediction and extracts the answer from it
+    pred: list of token ids like [0, 10, 0, 11, 0, 12, 13]
+    return: answer which is an integer like 0
+    """
+    equal_tokenid = tokenizer.tokenize("=")[0]
+    eos_tokenid = tokenizer.tokenize("EOS")[0]
+    answer_start_idx = pred.index(equal_tokenid) + 1
+    answer_end_idx = pred.index(eos_tokenid)
+    answer = pred[answer_start_idx:answer_end_idx]
+    try:
+        answer = int(tokenizer.detokenize(answer))
+    except:
+        print("Could not convert answer to integer")
+    return answer
+
+def select_results_n_digits(data, n):
+    """
+    Selects the results with n or more digits
+    """
+    return data[data["result"].apply(lambda x: len(str(x)) >= n)]
+
+def get_counts(data):
+    """
+    Initializes the counts for the metrics
+    """
+    counts = {}
+    train = data[data["is_train"]]
+    test = data[~data["is_train"]]
+
+    # Counts for overall accuracy
+    counts["train_total"] = len(train)
+    counts["test_total"] = len(test)
+
+    # Counts for individual digits
+    max_len = len(str(train["result"].max()))
+
+    for i in range(max_len):
+        train_n_digits = select_results_n_digits(train, i+1)
+        test_n_digits = select_results_n_digits(test, i+1)
+        counts[f"train_digit_{i}"] = len(train_n_digits)
+        counts[f"test_digit_{i}"] = len(test_n_digits)
+    return counts
+
+def check_individual_digits(pred, ground_truth, istrain, frequencies):
+        """
+        Updates the frequency for the individual digits metric
+        """
+        # Fill shorter number with zeros
+        max_len = max(len(str(pred)), len(str(ground_truth)))
+        pred_str = f"{pred:0{max_len}d}"
+        ground_truth_str = f"{ground_truth:0{max_len}d}"
+        
+        assert len(pred_str) == len(ground_truth_str)
+
+        for i in range(len(pred_str)):
+            # Initialize the dictionary entry
+            if istrain and f"train_digit_{i}" not in frequencies.keys():
+                frequencies[f'train_digit_{i}'] = 0
+            elif not istrain and f"test_digit_{i}" not in frequencies.keys():
+                frequencies[f'test_digit_{i}'] = 0
+            
+            # Now update the dictionary entry if the prediction is correct
+            if pred_str[-(i+1)] == ground_truth_str[-(i+1)]:
+                #print("correct digit prediction for digit ", i)
+                #print("ground_truth:", ground_truth_str)
+                #print("pred:", pred_str)
+                if istrain:
+                    frequencies[f'train_digit_{i}'] += 1
+                else:
+                    frequencies[f'test_digit_{i}'] += 1
+            '''
+            else:
+                print("incorrect digit prediction for digit ", i)
+                print("ground_truth:", ground_truth_str)
+                print("pred:", pred_str)
+            '''
+
+def get_frequencies(data, model, tokenizer):
+    """
+    Calculates the frequencies for the metrics
+    """
+    frequencies = {
+        "train_total": 0,
+        "test_total": 0
+    }
+    # Calculate the accuracy (digits and overall) for train and test
+    for _, row in data.iterrows():
+
+        is_train = row["is_train"]
+        # Get the ground truth and prediction
+        ground_truth = int(row["result"])
+        # Convert the tokenized input to a list
+        input = tokenizer.tokenize(f"{row['operand_1']}+{row['operand_2']}=")
+        pred = model.generate_greedy(input)
+        answer = extract_answer_from_prediction(pred, tokenizer)
+        
+        # Check prediction and ground truth overall
+        if answer == ground_truth:
+            if is_train:
+                frequencies["train_total"] += 1
+            else:
+                frequencies["test_total"] += 1
+        
+        # Check prediction and ground truth for individual digits
+
+        check_individual_digits(answer, ground_truth, is_train, frequencies)
+
+    return frequencies
+
+def take_metrics(model_path):
+
+    # Model and tokenizer
+    device = t.device("cuda" if t.cuda.is_available() else "cpu")
+    config = Config()
+    model = Transformer(config)
+    model.load_state_dict(t.load(model_path, map_location = device)["model"])
+    model.to(device)
+    model.eval()
+    tokenizer = Tokenizer(config)
+
+    # We evaluate directly on the data df saved in the same directory as the model
+    data_path = "saved_runs/variable_digit_add_50/data.csv"
+    data = pd.read_csv(data_path)
+
+    # Get counts
+    counts = get_counts(data)
+    # print("counts", counts)
+
+    # Get the frequencies
+    frequencies = get_frequencies(data, model, tokenizer)
+    # print("frequencies", frequencies)
+
+    # Divide the frequencies by the counts to get the metrics
+    metrics = {}
+    for key in frequencies.keys():
+        metrics[key + "_accuracy"] = frequencies[key] / counts[key]
+
+    # print("metrics", metrics)
+
+    # Save the metrics to a json file
+    save_metrics(metrics, model_path)
+
+def save_metrics(metrics_dict, model_path):
+    """
+    Function which saves the metrics of a model to a json file
+    called "metrics.json" in the same directory as the model
+    """
+    # Extract the directory and model name
+    dir_path = os.path.dirname(model_path)
+    model_name = os.path.basename(model_path)
+
+    # Save the metrics to metric.json
+    metrics_data = {model_name: metrics_dict}
+    metrics_file_path = os.path.join(dir_path, "metrics.json")
+
+    # Append or create the metrics file
+    if os.path.exists(metrics_file_path):
+        with open(metrics_file_path, "r+") as f:
+            existing_data = json.load(f)
+            existing_data.update(metrics_data)
+            f.seek(0)
+            json.dump(existing_data, f, indent=4)
+    else:
+        # Create and write the file if it doesn't exist
+        with open(metrics_file_path, "w") as f:
+            json.dump(metrics_data, f, indent=4)
+
     

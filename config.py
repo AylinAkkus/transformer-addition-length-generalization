@@ -58,13 +58,6 @@ class Config():
 
 
     device: t.device = t.device("cuda") if t.cuda.is_available() else t.device("cpu")
-    print(f"Using device: {device}")
-    print(f"fixed_digit: {fixed_digit}")
-    print(f"Training for {num_epochs} epochs")
-    print(f"Batch size: {batch_size}")
-    print(f"Learning rate: {lr}")
-    print(f"Train on {frac_train} of the data")
-    print(f"Saving model every {save_every} epochs")
 
     # TODO ankify the privileged basis concept- a priori vs etc. ; consider writing up an explanation of privileged basis
 

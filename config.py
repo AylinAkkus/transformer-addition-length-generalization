@@ -56,7 +56,6 @@ class Config():
 
     act_type: str = 'ReLU' #@param ['ReLU', 'GeLU']
 
-
     device: t.device = t.device("cuda") if t.cuda.is_available() else t.device("cpu")
 
     # TODO ankify the privileged basis concept- a priori vs etc. ; consider writing up an explanation of privileged basis

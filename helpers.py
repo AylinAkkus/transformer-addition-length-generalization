@@ -546,13 +546,17 @@ def extract_answer_from_prediction(pred, tokenizer):
     equal_tokenid = tokenizer.tokenize("=")[0]
     eos_tokenid = tokenizer.tokenize("EOS")[0]
     answer_start_idx = pred.index(equal_tokenid) + 1
-    answer_end_idx = pred.index(eos_tokenid)
+    try:
+        answer_end_idx = pred.index(eos_tokenid)
+    except ValueError:
+        return None
     answer = pred[answer_start_idx:answer_end_idx]
     try:
         answer = int(tokenizer.detokenize(answer))
+        return answer
     except:
-        print("Could not convert answer to integer")
-    return answer
+        return None
+
 
 def select_results_n_digits(data, n):
     """
@@ -624,6 +628,10 @@ def get_frequencies(data, model, tokenizer):
         "train_total": 0,
         "test_total": 0
     }
+
+    # maximum length of an answer
+    max_len = len(str(data["result"].max()))
+
     # Calculate the accuracy (digits and overall) for train and test
     for _, row in data.iterrows():
 
@@ -634,6 +642,11 @@ def get_frequencies(data, model, tokenizer):
         input = tokenizer.tokenize(f"{row['operand_1']}+{row['operand_2']}=")
         pred = model.generate_greedy(input)
         answer = extract_answer_from_prediction(pred, tokenizer)
+        if len(str(answer)) > max_len:
+            answer = None
+
+        if answer is None:
+            continue
         
         # Check prediction and ground truth overall
         if answer == ground_truth:
@@ -680,6 +693,8 @@ def take_metrics(model_path, dir_path):
 
     # Save the metrics to a json file
     save_metrics(metrics, model_path, dir_path)
+
+    return metrics
 
 def save_metrics(metrics_dict, model_path, dir_path):
     """

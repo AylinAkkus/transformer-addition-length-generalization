@@ -6,7 +6,7 @@ __all__ = ['use_drive', 'root', 'imshow', 'imshow_div', 'run_shell_command_as_py
            'normalize', 'extract_freq_2d', 'get_cov', 'is_close', 'cpu_aware_load_at_root',
            'load_mod_addition_frac_train_sweep', 'load_5_digit_addition_infinite', 'load_5_digit_addition_finite',
            'load_induction_head_finite', 'load_induction_head_infinite', 'load_infinite_data_losses',
-           'load_finite_data_losses', 'load_no_wd_width_scan', 'take_metrics', 'extract_answer_from_prediction', 'add_carry_columns_to_df']
+           'load_finite_data_losses', 'load_no_wd_width_scan', 'take_metrics', 'extract_answer_from_prediction']
 
 # %% ../ipynb 2
 def run_shell_command_as_python(shell):
@@ -719,34 +719,3 @@ def save_metrics(metrics_dict, model_path, dir_path):
         # Create and write the file if it doesn't exist
         with open(metrics_file_path, "w") as f:
             json.dump(metrics_data, f, indent=4)
-
-def carry_digits(row, max_len):
-    """
-    Checks whether there is a carry digit at position n in the result of the addition
-    """
-    # Read the operands
-    operand_1 = str(row["operand_1"])
-    operand_2 = str(row["operand_2"])
-
-    # Pad the operands with 0s
-    paddded_op_1 = operand_1.zfill(max_len)
-    padded_op_2 = operand_2.zfill(max_len)
-    # Check for all carry digits
-    carries = [0] * (max_len-1)
-    for i in range(max_len):
-        if int(paddded_op_1[-(i+1)]) + int(padded_op_2[-(i+1)]) >= 10:
-            carries[-(i+1)] = 1
-
-    assert len(carries) == max_len-1
-    return carries
-   
-def add_carry_columns_to_df(data_path, new_data_path=None):
-    df = pd.read_csv(data_path)
-    max_len = df["result"].apply(lambda x: len(str(x))).max()
-    carry_col_names = [f"carry_{i}" for i in range(1, max_len)]
-    res = df.apply(lambda x: carry_digits(x, max_len), axis=1)
-    df[carry_col_names] = pd.DataFrame(res.tolist(), index=df.index)
-    if new_data_path:
-        df.to_csv(new_data_path, index=False)
-    else:
-        df.to_csv(data_path, index=False)

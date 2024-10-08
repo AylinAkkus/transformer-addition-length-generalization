@@ -3,7 +3,12 @@
 `transformers.py` contains the code to train the model. `Grokking_Analysis.ipynb` contains the code to load the saved checkpoints for the mainline run, calculate the progress metrics on it, and plots the figures. `Non_Modular_Addition_Grokking_Tasks.ipynb` contains training code for the non-modular addition experiments.
 
 # To Do:
-- Train a Linear Classifier for Carry Digits from 1) attention_out + resid_pre and 2) mlp_out + resid_mid
+- Train a Linear Classifier for Carry Digits from 1) resid_mid and 2) resid_post [DONE]
+  - Insights:
+  - There is a carry feature in the learned representations. We can predict the carry with > 99% accuracy
+  - Attention already extracts carry digits feature, because we can predict it from resid_mid
+  - resid_mid and resid_post have different "basis", because carry digits basis vectors do not align
+- Decode from resid_mid
 - PCA of learned embeddings (algebraic structure visible), compare over epochs
 - Add a functionality to train from checkpoint (side quest, would save us if training is interrupted somehow)
 - Vary positional encodings (current implementations learns the positional encodings)

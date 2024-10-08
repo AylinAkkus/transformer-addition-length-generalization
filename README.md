@@ -3,17 +3,9 @@
 `transformers.py` contains the code to train the model. `Grokking_Analysis.ipynb` contains the code to load the saved checkpoints for the mainline run, calculate the progress metrics on it, and plots the figures. `Non_Modular_Addition_Grokking_Tasks.ipynb` contains training code for the non-modular addition experiments.
 
 # To Do:
-- Try character level tokenization with 0s to fix the varying length (e.g. 012+031=043EOSPAD) [Done by Aylin]
-- Add a seed() to fix the train and test set [Done by Aylin]
-- Change folder structure and save the config and dataset for different runs [DONE by Aylin]
-- Add the conda environment file [Done by Mert]
-- Add a saving scheduling function (save a lot first 50 epochs and then save less) [Done by Aylin]
-- Add something to upsample lower-digit case (and potentially 3 digit in our case) [Done by Aylin]
-- Add SGD [Done by Aylin]
-- Modularize all code [Done by Aylin]
-- Create a Jupyter Notebook that takes a file name on the top and runs all the analysis [Aylin]
-- Add a functionality to train from checkpoint (side quest, would save us if training is interrupted somehow).
-- Train successful model. [BOTH]
+- Train a Linear Classifier for Carry Digits from 1) attention_out + resid_pre and 2) mlp_out + resid_mid
+- PCA of learned embeddings (algebraic structure visible), compare over epochs
+- Add a functionality to train from checkpoint (side quest, would save us if training is interrupted somehow)
 - Vary positional encodings (current implementations learns the positional encodings)
 
 # To Read

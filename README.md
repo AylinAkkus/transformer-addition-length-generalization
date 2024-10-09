@@ -8,7 +8,8 @@
   - There is a carry feature in the learned representations. We can predict the carry with > 99% accuracy
   - Attention already extracts carry digits feature, because we can predict it from resid_mid
   - resid_mid and resid_post have different "basis", because carry digits basis vectors do not align
-- Decode from resid_mid
+- Decode from resid_mid [DONE]:
+    - Model completely fails, probably because resid_mid is not aligned with the unembedding space
 - PCA of learned embeddings (algebraic structure visible), compare over epochs
 - Add a functionality to train from checkpoint (side quest, would save us if training is interrupted somehow)
 - Vary positional encodings (current implementations learns the positional encodings)

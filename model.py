@@ -1,7 +1,8 @@
-__all__ = ['HookPoint', 'Embed', 'Unembed', 'PosEmbed', 'LayerNorm', 'Attention', 'MLP', 'TransformerBlock', 'Transformer']
+__all__ = ['HookPoint', 'Embed', 'Unembed', 'PosEmbed', 'LayerNorm', 'Attention', 'MLP', 'TransformerBlock', 'Transformer', "load_model_from_file"]
 
 # %% ../transformer.ipynb 3
 import numpy as np
+import json
 import torch as t
 import torch.nn as nn
 import torch.optim as optim
@@ -59,7 +60,6 @@ class HookPoint(nn.Module):
     def forward(self, x):
         return x
 
-# %% ../transformer.ipynb 6
 class Embed(nn.Module):
     '''Define network architecture
     I defined my own transformer from scratch so I'd fully understand each component 
@@ -72,7 +72,6 @@ class Embed(nn.Module):
     def forward(self, x):
         return t.einsum('dbp -> bpd', self.W_E[:, x])
     
-
 #| export
 class Unembed(nn.Module):
     def __init__(self, d_vocab, d_model):
@@ -89,7 +88,9 @@ class PosEmbed(nn.Module):
         self.W_pos = nn.Parameter(t.randn(max_ctx, d_model)/np.sqrt(d_model))
     
     def forward(self, x):
+        # TODO: Remove this hack
         return x+self.W_pos[:x.shape[-2]]
+        #return self.W_pos[:x.shape[-2]].unsqueeze(0) + t.zeros(x.shape)
 
 #| export
 class LayerNorm(nn.Module):
@@ -218,6 +219,15 @@ class Transformer(nn.Module):
         x = self.unembed(x)
         return x
     
+    def forward_till_resid_mid(self,x):
+        x = self.embed(x)
+        x = self.pos_embed(x)
+        for block in self.blocks:
+            # Only go to through the attention module and the first residual connection
+            x = block.hook_resid_mid(x + block.hook_attn_out(block.attn((block.hook_resid_pre(x)))))
+        x = self.unembed(x)
+        return x
+    
     @t.no_grad()
     def generate_greedy(self, x):
         # Greedy generation for a sequence (non-batched)
@@ -256,4 +266,13 @@ class Transformer(nn.Module):
             hp.add_hook(save_hook, 'fwd')
             if incl_bwd:
                 hp.add_hook(save_hook_back, 'bwd')
-                
+
+
+def load_model_from_file(model_path):
+    config_json = json.load(open(model_path.rpartition('/')[0] + '/config.json'))
+    config = Config(**config_json)
+    device = t.device("cuda" if t.cuda.is_available() else "cpu")
+    model = Transformer(config)
+    model.load_state_dict(t.load(model_path, map_location = device)["model"])
+    print(f"Model loaded from {model_path}")
+    return model     

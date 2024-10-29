@@ -661,15 +661,15 @@ def get_frequencies(data, model, tokenizer):
 
     return frequencies
 
-def take_metrics(model_path, dir_path):
-
-    # Model and tokenizer
+def take_metrics(model_path):
+    # TODO copied code from the load_model_from_file function
+    # maybe put it into the helpers.py or should it just be another constructor
+    dir_path = model_path.rpartition('/')[0]
+    config_json = json.load(open(model_path.rpartition('/')[0] + '/config.json'))
+    config = Config(**config_json)
     device = t.device("cuda" if t.cuda.is_available() else "cpu")
-    config = Config()
     model = Transformer(config)
     model.load_state_dict(t.load(model_path, map_location = device)["model"])
-    model.to(device)
-    model.eval()
     tokenizer = Tokenizer(config)
 
     # We evaluate directly on the data df saved in the same directory as the model
@@ -678,24 +678,20 @@ def take_metrics(model_path, dir_path):
 
     # Get counts
     counts = get_counts(data)
-    # print("counts", counts)
 
     # Get the frequencies
     frequencies = get_frequencies(data, model, tokenizer)
-    # print("frequencies", frequencies)
 
     # Divide the frequencies by the counts to get the metrics
     metrics = {}
     for key in frequencies.keys():
         metrics[key + "_accuracy"] = frequencies[key] / counts[key]
 
-    # print("metrics", metrics)
-
     # Save the metrics to a json file
     save_metrics(metrics, model_path, dir_path)
 
     return metrics
-
+    
 def save_metrics(metrics_dict, model_path, dir_path):
     """
     Function which saves the metrics of a model to a json file

@@ -16,20 +16,41 @@ from torch import Tensor, nn
 from torch.distributions.categorical import Categorical
 from torch.nn import functional as F
 from tqdm.auto import tqdm
+from model import Transformer
+from torch.utils.data import DataLoader
+from .dataset import AdditionDataset
 
 device = t.device(
     "mps" if t.backends.mps.is_available() else "cuda" if t.cuda.is_available() else "cpu"
 )
 
+from re import X
+def linear_lr(step, steps):
+    return (1 - (step / steps))
+
+def constant_lr(*_):
+    return 1.0
+
+def cosine_decay_lr(step, steps):
+    return np.cos(0.5 * np.pi * step / (steps - 1))
+
+def cache_mlp(model, cache):
+    # Hook func to cache mlp activations for =
+    # TODO is this the right place?
+    def save_hook(tensor, name):
+        cache.append(tensor.detach().squeeze())
+    model.blocks[0].mlp.hook_post.add_hook(save_hook, 'fwd')
+
 @dataclass
 class SAEConfig:
-    n_inst: int
     d_in: int
     d_sae: int
+    n_inst: int = 1 # TODO: probably remove this
     l1_coeff: float = 0.2
     weight_normalize_eps: float = 1e-8
     tied_weights: bool = False
     architecture: Literal["standard", "gated"] = "standard"
+    batch_size: int = 32
 
 
 class SAE(nn.Module):
@@ -38,23 +59,29 @@ class SAE(nn.Module):
     b_enc: Float[Tensor, "inst d_sae"]
     b_dec: Float[Tensor, "inst d_in"]
 
-    def __init__(self, cfg: SAEConfig, model: Model) -> None:
+    def __init__(self, config: SAEConfig, model: Transformer) -> None:
         super(SAE, self).__init__()
 
-        assert cfg.d_in == model.cfg.d_hidden, "Model's hidden dim doesn't match SAE input dim"
-        self.cfg = cfg
+        assert config.d_in == model.config.d_mlp, "Model's hidden dim doesn't match SAE input dim"
+        self.config = config
         self.model = model.requires_grad_(False)
 
+        # Initialize weights
         self.W_enc = nn.Parameter(
-            nn.init.kaiming_uniform_(t.empty((cfg.n_inst, cfg.d_in,cfg.d_sae)))
+            nn.init.kaiming_uniform_(t.empty((config.n_inst, config.d_in,config.d_sae)))
             )
-        if cfg.tied_weights:
+        if config.tied_weights:
           self._W_dec = None
         else:
-          self._W_dec = nn.Parameter(nn.init.kaiming_uniform_(t.empty((cfg.n_inst, cfg.d_sae, cfg.d_in))))
-        self.b_enc = nn.Parameter(t.zeros(cfg.n_inst, cfg.d_sae))
-        self.b_dec = nn.Parameter(t.zeros(cfg.n_inst, cfg.d_in))
+          self._W_dec = nn.Parameter(nn.init.kaiming_uniform_(t.empty((config.n_inst, config.d_sae, config.d_in))))
+        self.b_enc = nn.Parameter(t.zeros(config.n_inst, config.d_sae))
+        self.b_dec = nn.Parameter(t.zeros(config.n_inst, config.d_in))
         self.to(device)
+
+        # Initialize dataloader
+        data_path = "saved_runs/fixed_digit_add_30/data.csv" # TODO make sure model and data are from same dir, maybe add this as model attribute
+        dataset = AdditionDataset(data_path)
+        self.dataloader = DataLoader(dataset, batch_size=self.config.batch_size, shuffle=True)
 
     @property
     def W_dec(self) -> Float[Tensor, "inst d_sae d_in"]:
@@ -63,15 +90,26 @@ class SAE(nn.Module):
     @property
     def W_dec_normalized(self) -> Float[Tensor, "inst d_sae d_in"]:
         """Returns decoder weights, normalized over the autoencoder input dimension."""
-        return self.W_dec / (self.W_dec.norm(dim=-1, keepdim=True) + self.cfg.weight_normalize_eps)
+        return self.W_dec / (self.W_dec.norm(dim=-1, keepdim=True) + self.config.weight_normalize_eps)
 
-    def generate_batch(self, batch_size: int) -> Float[Tensor, "batch inst d_in"]:
+    def generate_batch(self) -> Float[Tensor, "batch inst d_in"]:
         """
         Generates a batch of hidden activations from our model.
         """
-        features = self.model.generate_batch(batch_size)
-        W = self.model.W
-        return einops.einsum(features, W, "batch inst features, inst hidden features -> batch inst hidden")
+        #return einops.einsum(features, W, "batch inst features, inst hidden features -> batch inst hidden")
+        self.model.remove_all_hooks()
+        cache = [] # A list which will store the MLP activations for all tokens
+        cache_mlp(self.model, cache)
+        batch = next(iter(self.dataloader))
+        batch_stacked = t.stack(batch, dim=1)
+        
+        # Forward pass
+        self.model(batch_stacked)
+
+        # Reshaping the activations to: (num_tokens x samples) inst hidden_size
+        batch = t.cat(cache, dim=0)
+        batch = batch.reshape(-1, self.model.config.d_mlp).unsqueeze(dim=1)
+        return batch
 
     def forward(
         self,
@@ -105,14 +143,11 @@ class SAE(nn.Module):
             "L_reconstruction": reconstruction_loss,
             "L_sparsity": sparsity
             }
-        loss = reconstruction_loss.mean(dim=0).sum() + self.cfg.l1_coeff * sparsity.mean(dim=0).sum()
+        loss = reconstruction_loss.mean(dim=0).sum() + self.config.l1_coeff * sparsity.mean(dim=0).sum()
         return loss_dict, loss, acts, h_reconstructed
-
-        return 
 
     def optimize(
         self,
-        batch_size: int = 1024,
         steps: int = 10_000,
         log_freq: int = 50,
         lr: float = 1e-3,
@@ -156,7 +191,7 @@ class SAE(nn.Module):
                 if resample_method == "simple":
                     self.resample_simple(frac_active_in_window, resample_scale)
                 elif resample_method == "advanced":
-                    self.resample_advanced(frac_active_in_window, resample_scale, batch_size)
+                    self.resample_advanced(frac_active_in_window, resample_scale)
 
             # Update learning rate
             step_lr = lr * lr_scale(step, steps)
@@ -165,7 +200,7 @@ class SAE(nn.Module):
 
             # Get a batch of hidden activations from the model
             with t.inference_mode():
-                h = self.generate_batch(batch_size)
+                h = self.generate_batch()
 
             # Optimize
             loss_dict, loss, acts, _ = self.forward(h)
@@ -174,7 +209,7 @@ class SAE(nn.Module):
             optimizer.zero_grad()
 
             # Normalize decoder weights by modifying them inplace (if not using tied weights)
-            if not self.cfg.tied_weights:
+            if not self.config.tied_weights:
                 self.W_dec.data = self.W_dec_normalized
 
             # Calculate the mean sparsities over batch dim for each feature
@@ -201,7 +236,6 @@ class SAE(nn.Module):
         self,
         frac_active_in_window: Float[Tensor, "window inst d_sae"],
         resample_scale: float,
-        batch_size: int,
     ) -> None:
         """
         Resamples latents that have been dead for 'dead_feature_window' steps, according to `frac_active`.
@@ -212,4 +246,42 @@ class SAE(nn.Module):
             - Set new values of W_dec and W_enc to be these (centered and normalized) vectors, at each dead neuron
             - Set b_enc to be zero, at each dead neuron
         """
-        raise NotImplementedError()
+        h = self.generate_batch()
+        l2_loss = self.forward(h)[0]["L_reconstruction"]
+
+        for instance in range(self.config.n_inst):
+            # Find the dead latents in this instance. If all latents are alive, continue
+            is_dead = (frac_active_in_window[:, instance] < 1e-8).all(dim=0)
+            dead_latents = t.nonzero(is_dead).squeeze(-1)
+            n_dead = dead_latents.numel()
+            if n_dead == 0:
+                continue  # If we have no dead features, then we don't need to resample
+
+            # Compute L2 loss for each element in the batch
+            l2_loss_instance = l2_loss[:, instance]  # [batch_size]
+            if l2_loss_instance.max() < 1e-6:
+                continue  # If we have zero reconstruction loss, we don't need to resample
+
+            # Draw `d_sae` samples from [0, 1, ..., batch_size-1], with probabilities proportional to l2_loss
+            distn = Categorical(probs=l2_loss_instance.pow(2) / l2_loss_instance.pow(2).sum())
+            replacement_indices = distn.sample((n_dead,))  # type: ignore
+
+            # Index into the batch of hidden activations to get our replacement values
+            replacement_values = (h - self.b_dec)[replacement_indices, instance]  # [n_dead d_in]
+            replacement_values_normalized = replacement_values / (
+                replacement_values.norm(dim=-1, keepdim=True) + self.config.weight_normalize_eps
+            )
+
+            # Get the norm of alive neurons (or 1.0 if there are no alive neurons)
+            W_enc_norm_alive_mean = (
+                self.W_enc[instance, :, ~is_dead].norm(dim=0).mean().item()
+                if (~is_dead).any()
+                else 1.0
+            )
+
+            # Lastly, set the new weights & biases (W_dec is normalized, W_enc needs specific scaling, b_enc is zero)
+            self.W_dec.data[instance, dead_latents, :] = replacement_values_normalized
+            self.W_enc.data[instance, :, dead_latents] = (
+                replacement_values_normalized.T * W_enc_norm_alive_mean * resample_scale
+            )
+            self.b_enc.data[instance, dead_latents] = 0.0

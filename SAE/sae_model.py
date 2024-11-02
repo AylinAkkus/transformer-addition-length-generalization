@@ -82,6 +82,24 @@ class SAE(nn.Module):
         data_path = "saved_runs/fixed_digit_add_30/data.csv" # TODO make sure model and data are from same dir, maybe add this as model attribute
         dataset = AdditionDataset(data_path)
         self.dataloader = DataLoader(dataset, batch_size=self.config.batch_size, shuffle=True)
+    
+    @classmethod
+    def from_file(
+            cls,
+            path: str,
+        ) -> None:
+        """
+        Loads the SAE model including config and transformer model from a file.
+        Args:
+            path:   path to load the model
+        """
+        save_dict = t.load(path)
+        # keys = ["state_dict", "config", "transformer_state_dict", "transformer_config"]
+        config = save_dict["config"]
+        transformer_model = Transformer(save_dict["transformer_config"])
+        transformer_model.load_state_dict(save_dict["transformer_state_dict"])
+        sae = cls(config, transformer_model)
+        return sae
 
     @property
     def W_dec(self) -> Float[Tensor, "inst d_sae d_in"]:
@@ -285,3 +303,22 @@ class SAE(nn.Module):
                 replacement_values_normalized.T * W_enc_norm_alive_mean * resample_scale
             )
             self.b_enc.data[instance, dead_latents] = 0.0
+
+    @t.no_grad()
+    def save_model(
+            self,
+            path: str,
+    ) -> None:
+        """
+        Saves the SAE model including config and transformer model to a file.
+        Args:
+            path:   path to save the model to
+        """
+        save_dict = {
+            "state_dict": self.state_dict(),
+            "config": self.config,
+            "transformer_state_dict": self.model.state_dict(),
+            "transformer_config": self.model.config,
+        }
+        t.save(save_dict, path)
+
